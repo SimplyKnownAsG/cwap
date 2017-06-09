@@ -1,0 +1,50 @@
+# editor files
+*~
+.*.swp
+.vscode
+*.orig
+tags
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Generated files
+release/
+cwap.py
+*_wrap*
+cwap/cwap.hpp
+cwap/Version.cpp
+
+# Compiled files
+*.so
+*.pyd
+*.obj
+*.exp
+*.lib
+*.exe
+
+googletest/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*,cover
+.hypothesis/
+
+# Translations
+*.mo
+*.pot
+
+# PyBuilder
+target/
+
+#Ipython Notebook
+.ipynb_checkpoints
+

@@ -1,0 +1,24 @@
+BasedOnStyle: Mozilla 
+
+UseTab: Never
+AccessModifierOffset: -4
+IndentWidth: 4
+
+BreakBeforeBraces: Attach
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
+
+IndentCaseLabels: false
+NamespaceIndentation: All
+ColumnLimit: 100
+AlignOperands: true
+
+AllowShortBlocksOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: false
+
+PointerAlignment: Left
+
+AlwaysBreakTemplateDeclarations: true
+
+BreakBeforeTernaryOperators: true
