@@ -7,4 +7,9 @@ namespace cwap {
       , spacename(spacename) {
         this->cwap_type = cwap_type;
     }
+
+    std::ostream& operator<<(std::ostream& stream, const CwapVariable& self) {
+        stream << "<CwapVariable " << self.name << " " << *(self.cwap_type) << ">";
+        return stream;
+    }
 }

@@ -6,6 +6,7 @@
 
 #include <clang-c/Index.h>
 
+#include <iostream>
 #include <string>
 #include <unordered_map>
 
@@ -24,8 +25,7 @@ namespace cwap {
         std::unordered_map<std::string, CwapNamespace*> _namespaces;
 
     protected:
-        static CXChildVisitResult VisitChildrenCallback(CXCursor cursor,
-                                                        CXCursor parent,
+        static CXChildVisitResult VisitChildrenCallback(CXCursor cursor, CXCursor parent,
                                                         CXClientData client_data);
 
         CwapNamespace(const std::string name);

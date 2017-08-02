@@ -8,7 +8,7 @@ BIN_DIR=$(BUILD_DIR)/bin
 
 include MakefileFunctions.in
 
-CLANG_CXX_FLAGS := `llvm-config --cxxflags`
+CLANG_CXX_FLAGS := `llvm-config --cxxflags | sed -r 's/(-specs[^ ]+|-Wno-maybe-uninitialized|-fno-exceptions)//g'`
 CLANG_LD_FLAGS := `llvm-config --ldflags` -lclang
 ifeq ($(UNAME_S), Darwin)
 CLANG_CXX_FLAGS+= -stdlib=libstdc++

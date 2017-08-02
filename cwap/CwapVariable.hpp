@@ -2,6 +2,7 @@
 
 #include "cwap/CwapType.hpp"
 
+#include <iostream>
 #include <string>
 
 namespace cwap {
@@ -18,5 +19,7 @@ namespace cwap {
         friend class CwapNamespace;
 
         CwapVariable(std::string name, std::string spacename, CwapType* cwap_type);
+
+        friend std::ostream& operator<<(std::ostream& stream, const CwapVariable& self);
     };
 }

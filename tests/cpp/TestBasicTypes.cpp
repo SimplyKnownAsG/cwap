@@ -38,6 +38,12 @@ int main(int argc, char* argv[]) {
         cwap::Project proj("TestBasicTypes");
         ASSERT_EQ(0, proj.types().size());
         proj.parse("tests/cpp/TestBasicTypes.cpp");
+        for (auto things : proj.types()) {
+            std::cout << things.first << ": " << *(things.second) << std::endl;
+        }
+        for (auto things : proj.variables()) {
+            std::cout << things.first << ": " << *(things.second) << std::endl;
+        }
         ASSERT_EQ(8, proj.types().size());
 
         {

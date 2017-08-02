@@ -2,7 +2,8 @@
 import subprocess
 
 
-CLANG_CXX_FLAGS = subprocess.check_output('llvm-config --cxxflags', shell=True).strip().split()
+CLANG_CXX_FLAGS = subprocess.check_output("llvm-config --cxxflags "
+                    "| sed -r 's/(-specs[^ ]+|-Wno-maybe-uninitialized|-fno-exceptions)//g'", shell=True).strip().split()
 CLANG_LD_FLAGS =  subprocess.check_output('llvm-config --ldflags', shell=True).strip().split() + ['-lclang']
 # ifeq ($(UNAME_S), Darwin)
 CLANG_CXX_FLAGS += ['-stdlib=libstdc++']

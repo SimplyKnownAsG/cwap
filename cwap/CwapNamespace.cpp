@@ -16,49 +16,47 @@ std::string get_name(const CXCursor& cursor) {
 
 std::string get_linkage(const CXCursor& cursor) {
     CXLinkageKind linkage = clang_getCursorLinkage(cursor);
-    std::string linkageName;
+    std::string linkage_name;
     switch (linkage) {
     case CXLinkage_Invalid:
-        linkageName = "Invalid";
+        linkage_name = "Invalid";
         break;
     case CXLinkage_NoLinkage:
-        linkageName = "NoLinkage";
+        linkage_name = "NoLinkage";
         break;
     case CXLinkage_Internal:
-        linkageName = "Internal";
+        linkage_name = "Internal";
         break;
     case CXLinkage_UniqueExternal:
-        linkageName = "UniqueExternal";
+        linkage_name = "UniqueExternal";
         break;
     case CXLinkage_External:
-        linkageName = "External";
+        linkage_name = "External";
         break;
     default:
-        linkageName = "Unknown";
+        linkage_name = "Unknown";
         break;
     }
-    return linkageName;
+    return linkage_name;
 }
 
 void show_parent(const CXCursor& cursor, const CXCursor& parent) {
-    CXCursor semaParent = clang_getCursorSemanticParent(cursor);
-    CXCursor lexParent = clang_getCursorLexicalParent(cursor);
-    CXString parentName = clang_getCursorSpelling(parent);
-    CXString semaParentName = clang_getCursorSpelling(semaParent);
-    CXString lexParentName = clang_getCursorSpelling(lexParent);
-    printf("  Parent: parent:%s semantic:%s lexicial:%s\n",
-           clang_getCString(parentName),
-           clang_getCString(semaParentName),
-           clang_getCString(lexParentName));
-
-    clang_disposeString(parentName);
-    clang_disposeString(semaParentName);
-    clang_disposeString(lexParentName);
+    CXCursor sematic_parent = clang_getCursorSemanticParent(cursor);
+    CXCursor lexical_parent = clang_getCursorLexicalParent(cursor);
+    CXString parent_name = clang_getCursorSpelling(parent);
+    CXString semantic_parent_name = clang_getCursorSpelling(sematic_parent);
+    CXString lexical_parent_name = clang_getCursorSpelling(lexical_parent);
+    /* std::cout << "  Parent: parent:" << clang_getCString(parent_name) */
+    /*           << "semantic:" << clang_getCString(semantic_parent_name) */
+    /*           << "lexicial:" << clang_getCString(lexical_parent_name) << std::endl; */
+    clang_disposeString(parent_name);
+    clang_disposeString(semantic_parent_name);
+    clang_disposeString(lexical_parent_name);
 }
 
 void show_usr(const CXCursor& cursor) {
     CXString usr = clang_getCursorUSR(cursor);
-    printf("  USR: %s\n", clang_getCString(usr));
+    /* std::cout << "  USR: " << clang_getCString(usr) << std::endl; */
     clang_disposeString(usr);
 }
 
@@ -75,15 +73,14 @@ bool get_declaration_name(const CXCursor& cursor, std::string& cursor_kind) {
 
 namespace cwap {
 
-    CXChildVisitResult CwapNamespace::VisitChildrenCallback(CXCursor cursor,
-                                                            CXCursor parent,
+    CXChildVisitResult CwapNamespace::VisitChildrenCallback(CXCursor cursor, CXCursor parent,
                                                             CXClientData client_data) {
         cwap::CwapNamespace* p = (cwap::CwapNamespace*)client_data;
 
         std::string name = get_name(cursor);
         Location location = Location::Create(cursor);
         if (location.file_name != "tests/cpp/TestBasicTypes.cpp") {
-            std::cout << "leaving for file name: " << location.file_name << std::endl;
+            /* std::cout << "leaving for file name: " << location.file_name << std::endl; */
             return CXChildVisit_Continue;
         }
         std::string linkage = get_linkage(cursor);
@@ -94,11 +91,11 @@ namespace cwap {
             return CXChildVisit_Recurse;
         }
         cwap::CwapType* ct = CwapType::Factory(cursor, p);
-        std::cout << "  Name: " << name << std::endl;
-        std::cout << "  Type: " << ct->name << std::endl;
-        std::cout << "  Location: " << location << std::endl;
-        std::cout << "  Linkage: " << linkage << std::endl;
-        std::cout << "  Declaration Type: " << declaration_type << std::endl;
+        /* std::cout << "  Name: " << name << std::endl; */
+        /* std::cout << "  Type: " << ct->name << std::endl; */
+        /* std::cout << "  Location: " << location << std::endl; */
+        /* std::cout << "  Linkage: " << linkage << std::endl; */
+        /* std::cout << "  Declaration Type: " << declaration_type << std::endl; */
         if (p->_types.count(ct->name)) {
             auto temp = ct;
             ct = p->_types[ct->name];
@@ -108,9 +105,9 @@ namespace cwap {
         }
         cwap::CwapVariable* cv = new cwap::CwapVariable(name, "", ct);
         p->_variables[cv->name] = cv;
-        show_parent(cursor, parent);
-        show_usr(cursor);
-        std::cout << std::endl;
+        /* show_parent(cursor, parent); */
+        /* show_usr(cursor); */
+        /* std::cout << std::endl; */
 
         // visit children recursively
         clang_visitChildren(cursor, CwapNamespace::VisitChildrenCallback, client_data);
@@ -122,7 +119,6 @@ namespace cwap {
       : name(name) {}
 
     const std::unordered_map<std::string, CwapType*> CwapNamespace::types() const {
-        std::cout << " types size is ... " << this->_types.size() << std::endl;
         return this->_types;
     }
 

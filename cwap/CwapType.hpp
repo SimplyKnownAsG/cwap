@@ -12,13 +12,8 @@ namespace cwap {
     protected:
         friend class CwapNamespace;
 
-        CwapType(std::string name,
-                 CwapNamespace const* spacename,
-                 bool is_basic,
-                 bool is_struct,
-                 bool is_function,
-                 bool is_class,
-                 bool is_static);
+        CwapType(std::string name, CwapNamespace const* spacename, bool is_basic, bool is_struct,
+                 bool is_function, bool is_class, bool is_static);
 
         static CwapType* Factory(CXCursor& cursor, CwapNamespace const* spacename);
 
@@ -36,5 +31,7 @@ namespace cwap {
         const bool is_class;
 
         const bool is_static;
+
+        friend std::ostream& operator<<(std::ostream& stream, const CwapType& self);
     };
 }
