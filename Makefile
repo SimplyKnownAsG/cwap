@@ -10,31 +10,20 @@ include MakefileFunctions.in
 
 CLANG_CXX_FLAGS := `llvm-config --cxxflags | sed -r 's/(-specs[^ ]+|-Wno-maybe-uninitialized|-fno-exceptions)//g'`
 CLANG_LD_FLAGS := `llvm-config --ldflags` -lclang
+
 ifeq ($(UNAME_S), Darwin)
-CLANG_CXX_FLAGS+= -stdlib=libstdc++
-# CLANG_LD_FLAGS+= -stdlib=libstdc++
+	CLANG_CXX_FLAGS+= -stdlib=libstdc++
 endif
 
-ifeq ($(OS),Windows_NT)
-	CXX=cl
-	CXXFLAGS= -nologo -EHa -fp:strict -MD "-IC:\Python27\include" -I. -c $< -Fo:$@
-	LDFLAGS= -nologo '-libpath:C:\Python27\libs'
-	LDSHARED=cl  -nologo -EHa -fp:strict -MD "-IC:\Python27\include" -I. -DLL $^ -link $(LDFLAGS) -DLL -out:$@
-	LDSTATIC=lib $(LDFLAGS) -out:$@
-	LDEXE=link $(LDFLAGS) -out:$@
-	LIB$(PROJECT)=$(BIN_DIR)/lib$(PROJECT).lib
-	PY_EXT=$(BIN_DIR)/_$(PROJECT).pyd
-else
-	CXX=clang
-	LD=clang
-	CXXFLAGS= -fPIC -std=c++1y $(CLANG_CXX_FLAGS) -Wno-covered-switch-default -I/usr/include/python2.7 -I. -c $< -o $@
-	LDFLAGS= -fPIC $(CLANG_LD_FLAGS) -Wno-covered-switch-default
-	LDSHARED=clang++ -Wall -shared -o $@ $^ $< $(LDFLAGS)
-	LDSTATIC=ar crs $@
-	LDEXE=clang++ -Wall -Wcovered-switch-default -o $@ $(CLANG_LD_FLAGS)
-	LIB$(PROJECT)=$(BIN_DIR)/lib$(PROJECT).a
-	PY_EXT=$(BIN_DIR)/_$(PROJECT).so
-endif
+CXX=clang++
+LD=clang++
+CXXFLAGS= -std=c++1y $(CLANG_CXX_FLAGS) -Wno-covered-switch-default -I. -c $< -o $@
+LDFLAGS= $(CLANG_LD_FLAGS) -Wno-covered-switch-default
+LDSHARED=clang++ -Wall -shared -o $@ $^ $< $(LDFLAGS)
+LDSTATIC=ar crs $@
+LDEXE=clang++ -Wall -Wcovered-switch-default -o $@ $(CLANG_LD_FLAGS)
+LIB$(PROJECT)=$(BIN_DIR)/lib$(PROJECT).a
+PY_EXT=$(BIN_DIR)/_$(PROJECT).so
 
 $(PROJECT)EXEC=$(BIN_DIR)/$(PROJECT).exe
 
@@ -97,7 +86,7 @@ $(LIB$(PROJECT)): $(filter-out %Main.obj %main.obj,$(OBJ)) $(OBJ_DIR)/$(PROJECT)
 	$(call colorecho,$(LDSTATIC) $^)
 
 $($(PROJECT)EXEC): $(LIB$(PROJECT)) $(filter %Main.obj %main.obj,$(OBJ)) | $(TARGET_DIRS)
-	$(call colorecho,$(LDEXE) $^)
+	$(call colorecho,$(LDEXE) $^ $(CLANG_LD_FLAGS))
 
 $(PY_EXT): $(LIB$(PROJECT)) $(SRC_DIR)/$(PROJECT)_wrap.cpp | $(TARGET_DIRS)
 	$(call colorecho,$(LDSHARED))
@@ -106,7 +95,7 @@ test_cpp: $(CPP_TEST_EXEC)
 	$(foreach cpp_test_exec, $^, $(call colorecho,$(cpp_test_exec)))
 
 $(BIN_DIR)/%.exe: $(OBJ_DIR)/%.obj $(LIB$(PROJECT)) | $(TARGET_DIRS) $(HEADER_LIST)
-	$(call colorecho,$(LDEXE) $(filter-out $(PROJECT)/$(PROJECT).hpp,$^))
+	$(call colorecho,$(LDEXE) $(filter-out $(PROJECT)/$(PROJECT).hpp,$^) $(CLANG_LD_FLAGS))
 
 $(SRC_DIR)/$(PROJECT)_wrap.cpp $(SRC_DIR)/$(PROJECT)_wrap.hpp: $(HEADER_LIST)
 	$(call colorecho,)

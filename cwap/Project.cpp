@@ -2,17 +2,21 @@
 #include <algorithm>
 
 #include <clang-c/Index.h>
-#include <execinfo.h>
 #include <iostream>
 #include <signal.h>
 #include <stdio.h>
 #include <string>
+#include <vector>
+
+#ifndef _WIN32
+#include <execinfo.h>
 #include <ucontext.h>
 #include <unistd.h>
-#include <vector>
+#endif
 
 namespace cwap {
 
+#ifndef _WIN32
     void handler(int sig) {
         void* array[10];
         size_t size;
@@ -35,6 +39,7 @@ namespace cwap {
     }
 
     static int installed_handler = install_handler();
+#endif
 
     Project::Project(std::string name)
       : CwapNamespace(name) {}
@@ -45,22 +50,31 @@ namespace cwap {
     }
 
     void Project::parse(std::string filename, std::vector<std::string> clang_args) {
+#ifndef _WIN32
         if (installed_handler != 1) {
             installed_handler = install_handler();
         }
+#endif
         auto numArgs = clang_args.size();
 
         CXIndex index = clang_createIndex(1, 1);
 
         std::vector<const char*> c_style_args;
 
-        std::transform(clang_args.begin(), clang_args.end(), c_style_args.begin(),
+        std::transform(clang_args.begin(),
+                       clang_args.end(),
+                       c_style_args.begin(),
                        [](std::string arg) { return arg.c_str(); });
 
         // load source / header file
-        CXTranslationUnit tu = clang_parseTranslationUnit(
-          index, filename.c_str(), c_style_args.data(), numArgs, NULL, 0,
-          CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_Incomplete);
+        CXTranslationUnit tu = clang_parseTranslationUnit(index,
+                                                          filename.c_str(),
+                                                          c_style_args.data(),
+                                                          numArgs,
+                                                          NULL,
+                                                          0,
+                                                          CXTranslationUnit_PrecompiledPreamble |
+                                                            CXTranslationUnit_Incomplete);
         if (tu == NULL) {
             throw "Cannot create translation unit";
         }
