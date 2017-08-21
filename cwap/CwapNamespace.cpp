@@ -79,10 +79,10 @@ namespace cwap {
 
         std::string name = get_name(cursor);
         Location location = Location::Create(cursor);
-        if (location.file_name != "tests/cpp/TestBasicTypes.cpp") {
-            /* std::cout << "leaving for file name: " << location.file_name << std::endl; */
-            return CXChildVisit_Continue;
-        }
+        /* if (location.file_name != "tests/cpp/TestBasicTypes.cpp") { */
+        /*     /1* std::cout << "leaving for file name: " << location.file_name << std::endl; *1/ */
+        /*     return CXChildVisit_Continue; */
+        /* } */
         std::string linkage = get_linkage(cursor);
         /* if (linkage != "External") { */
         /* } */

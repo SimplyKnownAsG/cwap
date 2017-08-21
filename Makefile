@@ -2,7 +2,7 @@
 PROJECT:=cwap
 
 SRC_DIR=$(PROJECT)
-OBJ_DIR=$(BUILD_DIR)
+OBJ_DIR=$(BUILD_DIR)/obj
 BIN_DIR=$(BUILD_DIR)/bin
 
 
@@ -38,16 +38,18 @@ endif
 
 HEADER_LIST:=$(PROJECT)/$(PROJECT).hpp
 VERSION_FILES:=$(PROJECT)/Version.cpp
-AUTO_FILES:=%_wrap.hpp %_wrap.cpp $(HEADER_LIST) $(VERSION_FILES)
+TEST_MACROS_HEADER:=catch.hpp
+AUTO_FILES:=$(HEADER_LIST) $(VERSION_FILES) $(TEST_MACROS_HEADER)
 
 SRC = $(filter-out $(AUTO_FILES),$(call rwildcard, $(SRC_DIR), *.cpp))
 HEADERS = $(filter-out $(AUTO_FILES), $(call rwildcard, $(SRC_DIR), *.hpp))
 OBJ = $(patsubst %.cpp,$(OBJ_DIR)/%.obj,$(SRC))
 
-CPP_TEST_EXEC := $(sort $(patsubst %.cpp, $(BIN_DIR)/%.exe, $(call rwildcard, tests examples, *.cpp)))
-CPP_TEST_OBJ := $(patsubst $(BIN_DIR)/%.exe,$(OBJ_DIR)/%.obj,$(CPP_TEST_EXEC))
+CPP_TEST_EXEC := $(sort $(patsubst %.cpp, $(BIN_DIR)/%.exe, $(call rwildcard, tests, *.cpp)))
+CPP_TEST_OBJ := $(patsubst %.cpp,$(OBJ_DIR)/%.obj, $(call rwildcard, tests, *.cpp))
 
-all: $(VERSION_FILES) test
+# force TEST_MACROS_HEADER to be retrieved here...
+all: $(VERSION_FILES) $(TEST_MACROS_HEADER) test
 
 # this must be placed after your .DEFAULT_GOAL, or you can manually state what it is
 # https://www.gnu.org/software/make/manual/html_node/Special-Variables.html
@@ -57,7 +59,7 @@ debug: test
 
 clean:
 	-$(RM) -r ./debug/ ./release/
-	-$(RM) $(HEADER_LIST) $(VERSION_FILES)
+	-$(RM) $(AUTO_FILES)
 
 clobber:
 	-git clean -fxd --exclude .vscode/
@@ -91,7 +93,7 @@ $($(PROJECT)EXEC): $(LIB$(PROJECT)) $(filter %Main.obj %main.obj,$(OBJ)) | $(TAR
 $(PY_EXT): $(LIB$(PROJECT)) $(SRC_DIR)/$(PROJECT)_wrap.cpp | $(TARGET_DIRS)
 	$(call colorecho,$(LDSHARED))
 
-test_cpp: $(CPP_TEST_EXEC)
+test_cpp: $(CPP_TEST_EXEC) | $(TEST_MACROS_HEADER)
 	$(foreach cpp_test_exec, $^, $(call colorecho,$(cpp_test_exec)))
 
 $(BIN_DIR)/%.exe: $(OBJ_DIR)/%.obj $(LIB$(PROJECT)) | $(TARGET_DIRS) $(HEADER_LIST)
@@ -110,4 +112,7 @@ documentation: apidoc
 
 apidoc: $(HEADERS) $(patsubst %.py,%.log,$(call rwildcard,examples,*.py))
 	$(call colorecho,doxygen doxyconf)
+
+$(TEST_MACROS_HEADER):
+	$(call colorecho,curl https://raw.githubusercontent.com/philsquared/Catch/master/single_include/catch.hpp > $@)
 

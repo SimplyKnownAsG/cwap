@@ -16,6 +16,7 @@ cwap.py
 *_wrap*
 cwap/cwap.hpp
 cwap/Version.cpp
+catch.hpp
 
 # Compiled files
 *.so
