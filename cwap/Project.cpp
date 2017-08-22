@@ -42,7 +42,7 @@ namespace cwap {
 #endif
 
     Project::Project(std::string name)
-      : CwapNamespace(name) {}
+      : Namespace(name) {}
 
     void Project::parse(std::string filename) {
         std::vector<std::string> empty;

@@ -1,9 +1,8 @@
-#include "cwap/cwap.hpp"
-
 #include "tests/cpp/TempFile.hpp"
 
-/* #define CATCH_CONFIG_MAIN */
-/* #include "catch.hpp" */
+#include "cwap/cwap.hpp"
+
+#include "catch.hpp"
 
 TEST_CASE("builtin basic types", "[basictypes]") {
     cwap::Project proj("TestBasicTypes");
@@ -15,9 +14,9 @@ TEST_CASE("builtin basic types", "[basictypes]") {
         temp_file.close();
         proj.parse(temp_file.name);
 
-        cwap::CwapVariable& v = *proj.variables().at("an_integer");
+        cwap::Variable& v = *proj.variables().at("an_integer");
         REQUIRE("an_integer" == v.name);
-        cwap::CwapType& t = *v.cwap_type;
+        cwap::Type& t = *v.cwap_type;
         REQUIRE("int" == t.name);
         REQUIRE(t.is_basic);
         REQUIRE(&t == proj.types().at("int"));
@@ -27,9 +26,9 @@ TEST_CASE("builtin basic types", "[basictypes]") {
         temp_file.close();
         proj.parse(temp_file.name);
 
-        cwap::CwapVariable& v = *proj.variables().at("a_float");
+        cwap::Variable& v = *proj.variables().at("a_float");
         REQUIRE("a_float" == v.name);
-        cwap::CwapType& t = *v.cwap_type;
+        cwap::Type& t = *v.cwap_type;
         REQUIRE("float" == t.name);
         REQUIRE(t.is_basic);
         REQUIRE(&t == proj.types().at("float"));
@@ -39,9 +38,9 @@ TEST_CASE("builtin basic types", "[basictypes]") {
         temp_file.close();
         proj.parse(temp_file.name);
 
-        cwap::CwapVariable& v = *proj.variables().at("a_long");
+        cwap::Variable& v = *proj.variables().at("a_long");
         REQUIRE("a_long" == v.name);
-        cwap::CwapType& t = *v.cwap_type;
+        cwap::Type& t = *v.cwap_type;
         REQUIRE("long" == t.name);
         REQUIRE(t.is_basic);
         REQUIRE(&t == proj.types().at("long"));
@@ -51,9 +50,9 @@ TEST_CASE("builtin basic types", "[basictypes]") {
         temp_file.close();
         proj.parse(temp_file.name);
 
-        cwap::CwapVariable& v = *proj.variables().at("a_long_long");
+        cwap::Variable& v = *proj.variables().at("a_long_long");
         REQUIRE("a_long_long" == v.name);
-        cwap::CwapType& t = *v.cwap_type;
+        cwap::Type& t = *v.cwap_type;
         REQUIRE("long long" == t.name);
         REQUIRE(t.is_basic);
         REQUIRE(&t == proj.types().at("long long"));
@@ -63,9 +62,9 @@ TEST_CASE("builtin basic types", "[basictypes]") {
         temp_file.close();
         proj.parse(temp_file.name);
 
-        cwap::CwapVariable& v = *proj.variables().at("a_double");
+        cwap::Variable& v = *proj.variables().at("a_double");
         REQUIRE("a_double" == v.name);
-        cwap::CwapType& t = *v.cwap_type;
+        cwap::Type& t = *v.cwap_type;
         REQUIRE("double" == t.name);
         REQUIRE(t.is_basic);
         REQUIRE(&t == proj.types().at("double"));
@@ -73,6 +72,27 @@ TEST_CASE("builtin basic types", "[basictypes]") {
 
     REQUIRE(proj.types().size() == 1);
     REQUIRE(proj.variables().size() == 1);
+}
+
+TEST_CASE("multiple variables with same type", "[basictypes]") {
+    cwap::Project proj("TestBasicTypes");
+    REQUIRE(0 == proj.types().size());
+    TempFile temp_file;
+
+    SECTION("declared in same line") {
+        temp_file << "int a, b;" << std::endl;
+    }
+    SECTION("declared separately") {
+        temp_file << "int a;" << std::endl;
+        temp_file << "int b;" << std::endl;
+    }
+
+    temp_file.close();
+    proj.parse(temp_file.name);
+    cwap::Variable& var_a = *proj.variables().at("a");
+    cwap::Variable& var_b = *proj.variables().at("b");
+    REQUIRE(var_a.cwap_type == var_b.cwap_type); // pointer comparison
+    REQUIRE(var_a.cwap_type == proj.types().at("int"));
 }
 
 TEST_CASE("builtin basic types in one translation unit", "[basictypes]") {
@@ -91,30 +111,30 @@ TEST_CASE("builtin basic types in one translation unit", "[basictypes]") {
     REQUIRE(proj.types().size() == 5);
     REQUIRE(proj.variables().size() == 5);
 
-    cwap::CwapVariable& v_int = *proj.variables().at("an_integer");
-    cwap::CwapType& t_int = *v_int.cwap_type;
+    cwap::Variable& v_int = *proj.variables().at("an_integer");
+    cwap::Type& t_int = *v_int.cwap_type;
     REQUIRE(&t_int == proj.types().at("int"));
 
-    cwap::CwapVariable& v_float = *proj.variables().at("a_float");
-    cwap::CwapType& t_float = *v_float.cwap_type;
+    cwap::Variable& v_float = *proj.variables().at("a_float");
+    cwap::Type& t_float = *v_float.cwap_type;
     REQUIRE(&t_float == proj.types().at("float"));
     REQUIRE(&t_float != &t_int);
 
-    cwap::CwapVariable& v_long = *proj.variables().at("a_long");
-    cwap::CwapType& t_long = *v_long.cwap_type;
+    cwap::Variable& v_long = *proj.variables().at("a_long");
+    cwap::Type& t_long = *v_long.cwap_type;
     REQUIRE(&t_long == proj.types().at("long"));
     REQUIRE(&t_long != &t_int);
     REQUIRE(&t_long != &t_float);
 
-    cwap::CwapVariable& v_long_long = *proj.variables().at("a_long_long");
-    cwap::CwapType& t_long_long = *v_long_long.cwap_type;
+    cwap::Variable& v_long_long = *proj.variables().at("a_long_long");
+    cwap::Type& t_long_long = *v_long_long.cwap_type;
     REQUIRE(&t_long_long == proj.types().at("long long"));
     REQUIRE(&t_long_long != &t_int);
     REQUIRE(&t_long_long != &t_float);
     REQUIRE(&t_long_long != &t_long);
 
-    cwap::CwapVariable& v_double = *proj.variables().at("a_double");
-    cwap::CwapType& t_double = *v_double.cwap_type;
+    cwap::Variable& v_double = *proj.variables().at("a_double");
+    cwap::Type& t_double = *v_double.cwap_type;
     REQUIRE(&t_double == proj.types().at("double"));
     REQUIRE(&t_double != &t_int);
     REQUIRE(&t_double != &t_float);

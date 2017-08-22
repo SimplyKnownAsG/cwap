@@ -1,12 +1,12 @@
 #pragma once
 
-#include "cwap/CwapNamespace.hpp"
+#include "cwap/Namespace.hpp"
 
 #include <clang-c/Index.h>
 
 namespace cwap {
 
-    class Project : public CwapNamespace {
+    class Project : public Namespace {
     public:
         Project(std::string name);
 
