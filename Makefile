@@ -45,7 +45,7 @@ SRC = $(filter-out $(AUTO_FILES),$(call rwildcard, $(SRC_DIR), *.cpp))
 HEADERS = $(filter-out $(AUTO_FILES), $(call rwildcard, $(SRC_DIR), *.hpp))
 OBJ = $(patsubst %.cpp,$(OBJ_DIR)/%.obj,$(SRC))
 
-CPP_TEST_EXEC := $(sort $(patsubst %.cpp, $(BIN_DIR)/%.exe, $(call rwildcard, tests, *.cpp)))
+CPP_TEST_EXEC := $(sort $(patsubst %.cpp, $(BIN_DIR)/%.exe, $(call rwildcard, tests, *Main.cpp)))
 CPP_TEST_OBJ := $(patsubst %.cpp,$(OBJ_DIR)/%.obj, $(call rwildcard, tests, *.cpp))
 
 # force TEST_MACROS_HEADER to be retrieved here...
@@ -59,9 +59,9 @@ debug: test
 
 clean:
 	-$(RM) -r ./debug/ ./release/
-	-$(RM) $(AUTO_FILES)
 
 clobber:
+	-$(RM) $(AUTO_FILES)
 	-git clean -fxd --exclude .vscode/
 
 $(HEADER_LIST): $(HEADERS)
@@ -84,7 +84,7 @@ test: $($(PROJECT)EXEC) test_cpp
 test_py: $(PY_EXT)
 	$(call colorecho,PYTHONPATH=$(BIN_DIR) python -m unittest discover -bvs tests/pytests)
 
-$(LIB$(PROJECT)): $(filter-out %Main.obj %main.obj,$(OBJ)) $(OBJ_DIR)/$(PROJECT)/Version.obj | $(TARGET_DIRS)
+$(LIB$(PROJECT)): $(filter-out %Main.obj %main.obj,$(OBJ)) $(OBJ_DIR)/$(PROJECT)/Version.obj | $(TARGET_DIRS) $(HEADER_LIST)
 	$(call colorecho,$(LDSTATIC) $^)
 
 $($(PROJECT)EXEC): $(LIB$(PROJECT)) $(filter %Main.obj %main.obj,$(OBJ)) | $(TARGET_DIRS)
@@ -96,8 +96,11 @@ $(PY_EXT): $(LIB$(PROJECT)) $(SRC_DIR)/$(PROJECT)_wrap.cpp | $(TARGET_DIRS)
 test_cpp: $(CPP_TEST_EXEC) | $(TEST_MACROS_HEADER)
 	$(foreach cpp_test_exec, $^, $(call colorecho,$(cpp_test_exec)))
 
-$(BIN_DIR)/%.exe: $(OBJ_DIR)/%.obj $(LIB$(PROJECT)) | $(TARGET_DIRS) $(HEADER_LIST)
+$(CPP_TEST_EXEC): $(CPP_TEST_OBJ) $(LIB$(PROJECT)) | $(TEST_MACROS_HEADER)
 	$(call colorecho,$(LDEXE) $(filter-out $(PROJECT)/$(PROJECT).hpp,$^) $(CLANG_LD_FLAGS))
+
+# $(BIN_DIR)/%.exe: $(OBJ_DIR)/%.obj $(LIB$(PROJECT)) | $(TARGET_DIRS) $(HEADER_LIST)
+# 	$(call colorecho,$(LDEXE) $(filter-out $(PROJECT)/$(PROJECT).hpp,$^) $(CLANG_LD_FLAGS))
 
 $(SRC_DIR)/$(PROJECT)_wrap.cpp $(SRC_DIR)/$(PROJECT)_wrap.hpp: $(HEADER_LIST)
 	$(call colorecho,)

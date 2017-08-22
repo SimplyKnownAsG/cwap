@@ -20,7 +20,7 @@ namespace cwap {
     private:
         Location(std::string file_name, unsigned line, unsigned column, unsigned offset);
 
-        friend class CwapNamespace;
+        friend class Namespace;
 
         static Location Create(const CXCursor& cursor);
 

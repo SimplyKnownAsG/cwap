@@ -1,0 +1,1260 @@
+diff --git a/Makefile b/Makefile
+index 9cfb4f6..c273e99 100644
+--- a/Makefile
++++ b/Makefile
+@@ -45,7 +45,7 @@ SRC = $(filter-out $(AUTO_FILES),$(call rwildcard, $(SRC_DIR), *.cpp))
+ HEADERS = $(filter-out $(AUTO_FILES), $(call rwildcard, $(SRC_DIR), *.hpp))
+ OBJ = $(patsubst %.cpp,$(OBJ_DIR)/%.obj,$(SRC))
+ 
+-CPP_TEST_EXEC := $(sort $(patsubst %.cpp, $(BIN_DIR)/%.exe, $(call rwildcard, tests, *.cpp)))
++CPP_TEST_EXEC := $(sort $(patsubst %.cpp, $(BIN_DIR)/%.exe, $(call rwildcard, tests, *Main.cpp)))
+ CPP_TEST_OBJ := $(patsubst %.cpp,$(OBJ_DIR)/%.obj, $(call rwildcard, tests, *.cpp))
+ 
+ # force TEST_MACROS_HEADER to be retrieved here...
+@@ -59,9 +59,9 @@ debug: test
+ 
+ clean:
+ 	-$(RM) -r ./debug/ ./release/
+-	-$(RM) $(AUTO_FILES)
+ 
+ clobber:
++	-$(RM) $(AUTO_FILES)
+ 	-git clean -fxd --exclude .vscode/
+ 
+ $(HEADER_LIST): $(HEADERS)
+@@ -84,7 +84,7 @@ test: $($(PROJECT)EXEC) test_cpp
+ test_py: $(PY_EXT)
+ 	$(call colorecho,PYTHONPATH=$(BIN_DIR) python -m unittest discover -bvs tests/pytests)
+ 
+-$(LIB$(PROJECT)): $(filter-out %Main.obj %main.obj,$(OBJ)) $(OBJ_DIR)/$(PROJECT)/Version.obj | $(TARGET_DIRS)
++$(LIB$(PROJECT)): $(filter-out %Main.obj %main.obj,$(OBJ)) $(OBJ_DIR)/$(PROJECT)/Version.obj | $(TARGET_DIRS) $(HEADER_LIST)
+ 	$(call colorecho,$(LDSTATIC) $^)
+ 
+ $($(PROJECT)EXEC): $(LIB$(PROJECT)) $(filter %Main.obj %main.obj,$(OBJ)) | $(TARGET_DIRS)
+@@ -96,9 +96,12 @@ $(PY_EXT): $(LIB$(PROJECT)) $(SRC_DIR)/$(PROJECT)_wrap.cpp | $(TARGET_DIRS)
+ test_cpp: $(CPP_TEST_EXEC) | $(TEST_MACROS_HEADER)
+ 	$(foreach cpp_test_exec, $^, $(call colorecho,$(cpp_test_exec)))
+ 
+-$(BIN_DIR)/%.exe: $(OBJ_DIR)/%.obj $(LIB$(PROJECT)) | $(TARGET_DIRS) $(HEADER_LIST)
++$(CPP_TEST_EXEC): $(CPP_TEST_OBJ) $(LIB$(PROJECT)) | $(TEST_MACROS_HEADER)
+ 	$(call colorecho,$(LDEXE) $(filter-out $(PROJECT)/$(PROJECT).hpp,$^) $(CLANG_LD_FLAGS))
+ 
++# $(BIN_DIR)/%.exe: $(OBJ_DIR)/%.obj $(LIB$(PROJECT)) | $(TARGET_DIRS) $(HEADER_LIST)
++# 	$(call colorecho,$(LDEXE) $(filter-out $(PROJECT)/$(PROJECT).hpp,$^) $(CLANG_LD_FLAGS))
++
+ $(SRC_DIR)/$(PROJECT)_wrap.cpp $(SRC_DIR)/$(PROJECT)_wrap.hpp: $(HEADER_LIST)
+ 	$(call colorecho,)
+ 
+diff --git a/cwap/ConvenientClang.cpp b/cwap/ConvenientClang.cpp
+new file mode 100644
+index 0000000..89e7df9
+--- /dev/null
++++ b/cwap/ConvenientClang.cpp
+@@ -0,0 +1,10 @@
++#include "cwap/ConvenientClang.hpp"
++
++namespace cwap {
++    std::string get_name(const CXCursor& cursor) {
++        CXString spell = clang_getCursorSpelling(cursor);
++        std::string name(clang_getCString(spell));
++        clang_disposeString(spell);
++        return name;
++    }
++}
+diff --git a/cwap/ConvenientClang.hpp b/cwap/ConvenientClang.hpp
+new file mode 100644
+index 0000000..9ae61c4
+--- /dev/null
++++ b/cwap/ConvenientClang.hpp
+@@ -0,0 +1,8 @@
++#pragma once
++
++#include <clang-c/Index.h>
++#include <string>
++
++namespace cwap {
++    std::string get_name(const CXCursor& cursor);
++}
+diff --git a/cwap/CwapFunction.hpp b/cwap/CwapFunction.hpp
+deleted file mode 100644
+index 7b98e2b..0000000
+--- a/cwap/CwapFunction.hpp
++++ /dev/null
+@@ -1,38 +0,0 @@
+-#pragma once
+-
+-#include "cwap/CwapType.hpp"
+-#include "cwap/CwapVariable.hpp"
+-
+-#include <clang-c/Index.h>
+-
+-#include <string>
+-#include <vector>
+-
+-namespace cwap {
+-
+-    class CwapNamespace;
+-
+-    class CwapFunction {
+-    private:
+-        friend class CwapNamespace;
+-
+-        std::vector<CwapVariable*> _arguments;
+-
+-        CwapFunction(std::string name,
+-                     CwapNamespace const* spacename,
+-                     bool is_basic,
+-                     bool is_struct,
+-                     bool is_function,
+-                     bool is_class,
+-                     bool is_static);
+-
+-    public:
+-        const std::string name;
+-
+-        const CwapNamespace* spacename;
+-
+-        const CwapType* return_type;
+-
+-        const std::vector<CwapVariable*> arguments() const;
+-    };
+-}
+diff --git a/cwap/CwapNamespace.cpp b/cwap/CwapNamespace.cpp
+deleted file mode 100644
+index a7a695e..0000000
+--- a/cwap/CwapNamespace.cpp
++++ /dev/null
+@@ -1,145 +0,0 @@
+-#include "cwap/CwapNamespace.hpp"
+-#include "cwap/Location.hpp"
+-
+-#include <clang-c/Index.h>
+-
+-#include <algorithm>
+-#include <iostream>
+-#include <string>
+-
+-std::string get_name(const CXCursor& cursor) {
+-    CXString spell = clang_getCursorSpelling(cursor);
+-    std::string name(clang_getCString(spell));
+-    clang_disposeString(spell);
+-    return name;
+-}
+-
+-std::string get_linkage(const CXCursor& cursor) {
+-    CXLinkageKind linkage = clang_getCursorLinkage(cursor);
+-    std::string linkage_name;
+-    switch (linkage) {
+-    case CXLinkage_Invalid:
+-        linkage_name = "Invalid";
+-        break;
+-    case CXLinkage_NoLinkage:
+-        linkage_name = "NoLinkage";
+-        break;
+-    case CXLinkage_Internal:
+-        linkage_name = "Internal";
+-        break;
+-    case CXLinkage_UniqueExternal:
+-        linkage_name = "UniqueExternal";
+-        break;
+-    case CXLinkage_External:
+-        linkage_name = "External";
+-        break;
+-    default:
+-        linkage_name = "Unknown";
+-        break;
+-    }
+-    return linkage_name;
+-}
+-
+-void show_parent(const CXCursor& cursor, const CXCursor& parent) {
+-    CXCursor sematic_parent = clang_getCursorSemanticParent(cursor);
+-    CXCursor lexical_parent = clang_getCursorLexicalParent(cursor);
+-    CXString parent_name = clang_getCursorSpelling(parent);
+-    CXString semantic_parent_name = clang_getCursorSpelling(sematic_parent);
+-    CXString lexical_parent_name = clang_getCursorSpelling(lexical_parent);
+-    /* std::cout << "  Parent: parent:" << clang_getCString(parent_name) */
+-    /*           << "semantic:" << clang_getCString(semantic_parent_name) */
+-    /*           << "lexicial:" << clang_getCString(lexical_parent_name) << std::endl; */
+-    clang_disposeString(parent_name);
+-    clang_disposeString(semantic_parent_name);
+-    clang_disposeString(lexical_parent_name);
+-}
+-
+-void show_usr(const CXCursor& cursor) {
+-    CXString usr = clang_getCursorUSR(cursor);
+-    /* std::cout << "  USR: " << clang_getCString(usr) << std::endl; */
+-    clang_disposeString(usr);
+-}
+-
+-bool get_declaration_name(const CXCursor& cursor, std::string& cursor_kind) {
+-    CXCursorKind curKind = clang_getCursorKind(cursor);
+-
+-    CXString curKindName = clang_getCursorKindSpelling(curKind);
+-
+-    cursor_kind = std::string(clang_getCString(curKindName));
+-    clang_disposeString(curKindName);
+-
+-    return clang_isDeclaration(curKind);
+-}
+-
+-namespace cwap {
+-
+-    CXChildVisitResult CwapNamespace::VisitChildrenCallback(CXCursor cursor, CXCursor parent,
+-                                                            CXClientData client_data) {
+-        cwap::CwapNamespace* p = (cwap::CwapNamespace*)client_data;
+-
+-        std::string name = get_name(cursor);
+-        Location location = Location::Create(cursor);
+-        /* if (location.file_name != "tests/cpp/TestBasicTypes.cpp") { */
+-        /*     /1* std::cout << "leaving for file name: " << location.file_name << std::endl; *1/ */
+-        /*     return CXChildVisit_Continue; */
+-        /* } */
+-        std::string linkage = get_linkage(cursor);
+-        /* if (linkage != "External") { */
+-        /* } */
+-        std::string declaration_type;
+-        if (!get_declaration_name(cursor, declaration_type)) {
+-            return CXChildVisit_Recurse;
+-        }
+-        cwap::CwapType* ct = CwapType::Factory(cursor, p);
+-        /* std::cout << "  Name: " << name << std::endl; */
+-        /* std::cout << "  Type: " << ct->name << std::endl; */
+-        /* std::cout << "  Location: " << location << std::endl; */
+-        /* std::cout << "  Linkage: " << linkage << std::endl; */
+-        /* std::cout << "  Declaration Type: " << declaration_type << std::endl; */
+-        if (p->_types.count(ct->name)) {
+-            auto temp = ct;
+-            ct = p->_types[ct->name];
+-            delete temp;
+-        } else {
+-            p->_types[ct->name] = ct;
+-        }
+-        cwap::CwapVariable* cv = new cwap::CwapVariable(name, "", ct);
+-        p->_variables[cv->name] = cv;
+-        /* show_parent(cursor, parent); */
+-        /* show_usr(cursor); */
+-        /* std::cout << std::endl; */
+-
+-        // visit children recursively
+-        clang_visitChildren(cursor, CwapNamespace::VisitChildrenCallback, client_data);
+-
+-        return CXChildVisit_Recurse;
+-    }
+-
+-    CwapNamespace::CwapNamespace(std::string name)
+-      : name(name) {}
+-
+-    const std::unordered_map<std::string, CwapType*> CwapNamespace::types() const {
+-        return this->_types;
+-    }
+-
+-    const std::unordered_map<std::string, CwapVariable*> CwapNamespace::variables() const {
+-        return this->_variables;
+-    }
+-
+-    const std::unordered_map<std::string, CwapFunction*> CwapNamespace::functions() const {
+-        return this->_functions;
+-    }
+-
+-    const std::unordered_map<std::string, CwapNamespace*> CwapNamespace::namespaces() const {
+-        return this->_namespaces;
+-    }
+-    /* std::vector<std::string> CwapNamespace::names() { */
+-    /*     std::vector<std::string> names; */
+-    /*     std::transform( */
+-    /*       this->_types.begin(), */
+-    /*       this->_types.end(), */
+-    /*       std::back_inserter(names), */
+-    /*       [](decltype(this->types)::value_type const& key_val) { return key_val.first; }); */
+-    /*     return names; */
+-    /* } */
+-}
+diff --git a/cwap/CwapNamespace.hpp b/cwap/CwapNamespace.hpp
+deleted file mode 100644
+index e6b407c..0000000
+--- a/cwap/CwapNamespace.hpp
++++ /dev/null
+@@ -1,44 +0,0 @@
+-#pragma once
+-
+-#include "cwap/CwapFunction.hpp"
+-#include "cwap/CwapType.hpp"
+-#include "cwap/CwapVariable.hpp"
+-
+-#include <clang-c/Index.h>
+-
+-#include <iostream>
+-#include <string>
+-#include <unordered_map>
+-
+-namespace cwap {
+-
+-    class CwapNamespace;
+-
+-    class CwapNamespace {
+-    private:
+-        std::unordered_map<std::string, CwapType*> _types;
+-
+-        std::unordered_map<std::string, CwapVariable*> _variables;
+-
+-        std::unordered_map<std::string, CwapFunction*> _functions;
+-
+-        std::unordered_map<std::string, CwapNamespace*> _namespaces;
+-
+-    protected:
+-        static CXChildVisitResult VisitChildrenCallback(CXCursor cursor, CXCursor parent,
+-                                                        CXClientData client_data);
+-
+-        CwapNamespace(const std::string name);
+-
+-    public:
+-        const std::string name;
+-
+-        const std::unordered_map<std::string, CwapType*> types() const;
+-
+-        const std::unordered_map<std::string, CwapVariable*> variables() const;
+-
+-        const std::unordered_map<std::string, CwapFunction*> functions() const;
+-
+-        const std::unordered_map<std::string, CwapNamespace*> namespaces() const;
+-    };
+-}
+diff --git a/cwap/CwapType.hpp b/cwap/CwapType.hpp
+deleted file mode 100644
+index 0d6f9e9..0000000
+--- a/cwap/CwapType.hpp
++++ /dev/null
+@@ -1,37 +0,0 @@
+-#pragma once
+-
+-#include <clang-c/Index.h>
+-
+-#include <string>
+-
+-namespace cwap {
+-
+-    class CwapNamespace;
+-
+-    class CwapType {
+-    protected:
+-        friend class CwapNamespace;
+-
+-        CwapType(std::string name, CwapNamespace const* spacename, bool is_basic, bool is_struct,
+-                 bool is_function, bool is_class, bool is_static);
+-
+-        static CwapType* Factory(CXCursor& cursor, CwapNamespace const* spacename);
+-
+-    public:
+-        const std::string name;
+-
+-        CwapNamespace const* spacename;
+-
+-        const bool is_basic;
+-
+-        const bool is_function;
+-
+-        const bool is_struct;
+-
+-        const bool is_class;
+-
+-        const bool is_static;
+-
+-        friend std::ostream& operator<<(std::ostream& stream, const CwapType& self);
+-    };
+-}
+diff --git a/cwap/CwapVariable.cpp b/cwap/CwapVariable.cpp
+deleted file mode 100644
+index 8eebdd7..0000000
+--- a/cwap/CwapVariable.cpp
++++ /dev/null
+@@ -1,15 +0,0 @@
+-#include "cwap/CwapVariable.hpp"
+-
+-namespace cwap {
+-
+-    CwapVariable::CwapVariable(std::string name, std::string spacename, CwapType* cwap_type)
+-      : name(name)
+-      , spacename(spacename) {
+-        this->cwap_type = cwap_type;
+-    }
+-
+-    std::ostream& operator<<(std::ostream& stream, const CwapVariable& self) {
+-        stream << "<CwapVariable " << self.name << " " << *(self.cwap_type) << ">";
+-        return stream;
+-    }
+-}
+diff --git a/cwap/CwapVariable.hpp b/cwap/CwapVariable.hpp
+deleted file mode 100644
+index 5de8751..0000000
+--- a/cwap/CwapVariable.hpp
++++ /dev/null
+@@ -1,25 +0,0 @@
+-#pragma once
+-
+-#include "cwap/CwapType.hpp"
+-
+-#include <iostream>
+-#include <string>
+-
+-namespace cwap {
+-
+-    class CwapVariable {
+-    public:
+-        const std::string name;
+-
+-        const std::string spacename;
+-
+-        CwapType* cwap_type;
+-
+-    protected:
+-        friend class CwapNamespace;
+-
+-        CwapVariable(std::string name, std::string spacename, CwapType* cwap_type);
+-
+-        friend std::ostream& operator<<(std::ostream& stream, const CwapVariable& self);
+-    };
+-}
+diff --git a/cwap/Function.cpp b/cwap/Function.cpp
+new file mode 100644
+index 0000000..6d78d17
+--- /dev/null
++++ b/cwap/Function.cpp
+@@ -0,0 +1,50 @@
++#include "cwap/Function.hpp"
++#include "cwap/ConvenientClang.hpp"
++#include "cwap/Namespace.hpp"
++
++#include <iostream>
++
++namespace cwap {
++
++    Function::Function(std::string name, Namespace const* space)
++      : name(name)
++      , space(space){};
++
++    Function* Function::Factory(CXCursor& cursor, Namespace* space) {
++        Function* func = new Function(get_name(cursor), space);
++        CXType clang_func_type = clang_getCursorType(cursor);
++        CXType clang_result_type = clang_getResultType(clang_func_type);
++        func->return_type = space->get_type(clang_result_type);
++        for (int ii = 0; ii < clang_getNumArgTypes(clang_func_type); ii++) {
++            CXCursor argument_cursor = clang_Cursor_getArgument(cursor, ii);
++            func->_arguments.push_back(Variable::Factory(argument_cursor, space));
++        }
++        return func;
++    }
++
++    const std::vector<Variable*> Function::arguments() const {
++        return this->_arguments;
++    }
++
++    /* std::ostream& operator<<(std::ostream& stream, const Function& self) { */
++    /*     stream << "<Function "; */
++
++    /*     if (self.is_static) { */
++    /*         stream << "static "; */
++    /*     } */
++    /*     if (self.is_basic) { */
++    /*         stream << "basic type "; */
++    /*     } */
++    /*     if (self.is_function) { */
++    /*         stream << "function "; */
++    /*     } */
++    /*     if (self.is_struct) { */
++    /*         stream << "struct "; */
++    /*     } */
++    /*     if (self.is_class) { */
++    /*         stream << "class "; */
++    /*     } */
++    /*     stream << self.name << ">"; */
++    /*     return stream; */
++    /* } */
++}
+diff --git a/cwap/Function.hpp b/cwap/Function.hpp
+new file mode 100644
+index 0000000..693d1ba
+--- /dev/null
++++ b/cwap/Function.hpp
+@@ -0,0 +1,34 @@
++#pragma once
++
++#include "cwap/Type.hpp"
++#include "cwap/Variable.hpp"
++
++#include <clang-c/Index.h>
++
++#include <string>
++#include <vector>
++
++namespace cwap {
++
++    class Namespace;
++
++    class Function {
++    private:
++        friend class Namespace;
++
++        std::vector<Variable*> _arguments;
++
++        Function(std::string name, Namespace const* space);
++
++        static Function* Factory(CXCursor& cursor, Namespace* space);
++
++    public:
++        const std::string name;
++
++        const Namespace* space;
++
++        const Type* return_type;
++
++        const std::vector<Variable*> arguments() const;
++    };
++}
+diff --git a/cwap/Location.hpp b/cwap/Location.hpp
+index 1cb797e..1da6bde 100644
+--- a/cwap/Location.hpp
++++ b/cwap/Location.hpp
+@@ -20,7 +20,7 @@ namespace cwap {
+     private:
+         Location(std::string file_name, unsigned line, unsigned column, unsigned offset);
+ 
+-        friend class CwapNamespace;
++        friend class Namespace;
+ 
+         static Location Create(const CXCursor& cursor);
+ 
+diff --git a/cwap/Namespace.cpp b/cwap/Namespace.cpp
+new file mode 100644
+index 0000000..cd292fd
+--- /dev/null
++++ b/cwap/Namespace.cpp
+@@ -0,0 +1,79 @@
++#include "cwap/Namespace.hpp"
++#include "cwap/Location.hpp"
++
++#include <algorithm>
++#include <string>
++
++namespace cwap {
++
++    CXChildVisitResult Namespace::VisitChildrenCallback(CXCursor cursor,
++                                                        CXCursor parent,
++                                                        CXClientData client_data) {
++        Namespace* space = (Namespace*)client_data;
++        Location location = Location::Create(cursor);
++        CXCursorKind cursor_kind = clang_getCursorKind(cursor);
++        if (!clang_isDeclaration(cursor_kind)) {
++            return CXChildVisit_Recurse;
++        }
++        switch (cursor.kind) {
++            {
++            case CXCursor_VarDecl:
++                Variable* cv = Variable::Factory(cursor, space);
++                space->_variables[cv->name] = cv;
++                break;
++            }
++            {
++            case CXCursor_FunctionDecl:
++                Function* cf = Function::Factory(cursor, space);
++                space->_functions[cf->name] = cf;
++            }
++            { default:; }
++        }
++
++        // visit children recursively
++        clang_visitChildren(cursor, Namespace::VisitChildrenCallback, client_data);
++
++        return CXChildVisit_Recurse;
++    }
++
++    Namespace::Namespace(std::string name)
++      : name(name) {}
++
++    Type* Namespace::get_type(CXType& clang_type) {
++        Type* ct = Type::Factory(clang_type, this);
++        if (this->_types.count(ct->name)) {
++            auto temp = ct;
++            ct = this->_types[ct->name];
++            delete temp;
++        } else {
++            this->_types[ct->name] = ct;
++        }
++        return ct;
++    }
++
++    const std::unordered_map<std::string, Type*> Namespace::types() const {
++        return this->_types;
++    }
++
++    const std::unordered_map<std::string, Variable*> Namespace::variables() const {
++        return this->_variables;
++    }
++
++    const std::unordered_map<std::string, Function*> Namespace::functions() const {
++        return this->_functions;
++    }
++
++    const std::unordered_map<std::string, Namespace*> Namespace::namespaces() const {
++        return this->_namespaces;
++    }
++
++    /* std::vector<std::string> Namespace::names() { */
++    /*     std::vector<std::string> names; */
++    /*     std::transform( */
++    /*       this->_types.begin(), */
++    /*       this->_types.end(), */
++    /*       std::back_inserter(names), */
++    /*       [](decltype(this->types)::value_type const& key_val) { return key_val.first; }); */
++    /*     return names; */
++    /* } */
++}
+diff --git a/cwap/Namespace.hpp b/cwap/Namespace.hpp
+new file mode 100644
+index 0000000..447ab8c
+--- /dev/null
++++ b/cwap/Namespace.hpp
+@@ -0,0 +1,47 @@
++#pragma once
++
++#include "cwap/Function.hpp"
++#include "cwap/Type.hpp"
++#include "cwap/Variable.hpp"
++
++#include <clang-c/Index.h>
++
++#include <iostream>
++#include <string>
++#include <unordered_map>
++
++namespace cwap {
++
++    class Namespace;
++
++    class Namespace {
++    private:
++        std::unordered_map<std::string, Type*> _types;
++
++        std::unordered_map<std::string, Variable*> _variables;
++
++        std::unordered_map<std::string, Function*> _functions;
++
++        std::unordered_map<std::string, Namespace*> _namespaces;
++
++    protected:
++        static CXChildVisitResult VisitChildrenCallback(CXCursor cursor,
++                                                        CXCursor parent,
++                                                        CXClientData client_data);
++
++        Namespace(const std::string name);
++
++    public:
++        const std::string name;
++
++        Type* get_type(CXType& clang_type);
++
++        const std::unordered_map<std::string, Type*> types() const;
++
++        const std::unordered_map<std::string, Variable*> variables() const;
++
++        const std::unordered_map<std::string, Function*> functions() const;
++
++        const std::unordered_map<std::string, Namespace*> namespaces() const;
++    };
++}
+diff --git a/cwap/Project.cpp b/cwap/Project.cpp
+index 7e5cd87..332bf68 100644
+--- a/cwap/Project.cpp
++++ b/cwap/Project.cpp
+@@ -42,7 +42,7 @@ namespace cwap {
+ #endif
+ 
+     Project::Project(std::string name)
+-      : CwapNamespace(name) {}
++      : Namespace(name) {}
+ 
+     void Project::parse(std::string filename) {
+         std::vector<std::string> empty;
+diff --git a/cwap/Project.hpp b/cwap/Project.hpp
+index fdec22e..bc96b63 100644
+--- a/cwap/Project.hpp
++++ b/cwap/Project.hpp
+@@ -1,12 +1,12 @@
+ #pragma once
+ 
+-#include "cwap/CwapNamespace.hpp"
++#include "cwap/Namespace.hpp"
+ 
+ #include <clang-c/Index.h>
+ 
+ namespace cwap {
+ 
+-    class Project : public CwapNamespace {
++    class Project : public Namespace {
+     public:
+         Project(std::string name);
+ 
+diff --git a/cwap/CwapType.cpp b/cwap/Type.cpp
+similarity index 52%
+rename from cwap/CwapType.cpp
+rename to cwap/Type.cpp
+index 30b60e3..5aafe5d 100644
+--- a/cwap/CwapType.cpp
++++ b/cwap/Type.cpp
+@@ -1,30 +1,38 @@
+-#include "cwap/CwapType.hpp"
+-#include "cwap/CwapNamespace.hpp"
++#include "cwap/Type.hpp"
++#include "cwap/Namespace.hpp"
+ 
+ namespace cwap {
+ 
+-    CwapType::CwapType(std::string name, CwapNamespace const* spacename, bool is_basic,
+-                       bool is_function, bool is_struct, bool is_class, bool is_static)
++    Type::Type(std::string name,
++               Namespace const* space,
++               bool is_basic,
++               bool is_function,
++               bool is_struct,
++               bool is_class,
++               bool is_static)
+       : name(name)
+-      , spacename(spacename)
++      , space(space)
+       , is_basic(is_basic)
+       , is_function(is_function)
+       , is_struct(is_struct)
+       , is_class(is_class)
+       , is_static(is_static){};
+ 
+-    CwapType* CwapType::Factory(CXCursor& cursor, CwapNamespace const* spacename) {
+-        CXType type = clang_getCursorType(cursor);
++    Type* Type::Factory(CXType& type, Namespace const* space) {
+         CXString type_spelling = clang_getTypeSpelling(type);
+         std::string type_name(clang_getCString(type_spelling));
+         clang_disposeString(type_spelling);
+-        return new CwapType(type_name, spacename,
+-                            CXType_Void < type.kind && type.kind < CXType_NullPtr, false, false,
+-                            false, false);
++        return new Type(type_name,
++                        space,
++                        CXType_Void < type.kind && type.kind < CXType_NullPtr,
++                        false,
++                        false,
++                        false,
++                        false);
+     }
+ 
+-    std::ostream& operator<<(std::ostream& stream, const CwapType& self) {
+-        stream << "<CwapType ";
++    std::ostream& operator<<(std::ostream& stream, const Type& self) {
++        stream << "<Type ";
+ 
+         if (self.is_static) {
+             stream << "static ";
+diff --git a/cwap/Type.hpp b/cwap/Type.hpp
+new file mode 100644
+index 0000000..d23a4d8
+--- /dev/null
++++ b/cwap/Type.hpp
+@@ -0,0 +1,42 @@
++#pragma once
++
++#include <clang-c/Index.h>
++
++#include <string>
++
++namespace cwap {
++
++    class Namespace;
++
++    class Type {
++    protected:
++        friend class Namespace;
++
++        Type(std::string name,
++             Namespace const* space,
++             bool is_basic,
++             bool is_struct,
++             bool is_function,
++             bool is_class,
++             bool is_static);
++
++        static Type* Factory(CXType& cursor, Namespace const* space);
++
++    public:
++        const std::string name;
++
++        Namespace const* space;
++
++        const bool is_basic;
++
++        const bool is_function;
++
++        const bool is_struct;
++
++        const bool is_class;
++
++        const bool is_static;
++
++        friend std::ostream& operator<<(std::ostream& stream, const Type& self);
++    };
++}
+diff --git a/cwap/Variable.cpp b/cwap/Variable.cpp
+new file mode 100644
+index 0000000..4b06d6a
+--- /dev/null
++++ b/cwap/Variable.cpp
+@@ -0,0 +1,24 @@
++#include "cwap/Variable.hpp"
++#include "cwap/ConvenientClang.hpp"
++#include "cwap/Namespace.hpp"
++
++namespace cwap {
++
++    Variable::Variable(std::string name, std::string spacename, Type* cwap_type)
++      : name(name)
++      , spacename(spacename) {
++        this->cwap_type = cwap_type;
++    }
++
++    Variable* Variable::Factory(CXCursor& cursor, Namespace* space) {
++        CXType clang_type = clang_getCursorType(cursor);
++        Type* type = space->get_type(clang_type);
++        Variable* variable = new Variable(get_name(cursor), "", type);
++        return variable;
++    }
++
++    std::ostream& operator<<(std::ostream& stream, const Variable& self) {
++        stream << "<Variable " << self.name << " " << *(self.cwap_type) << ">";
++        return stream;
++    }
++}
+diff --git a/cwap/Variable.hpp b/cwap/Variable.hpp
+new file mode 100644
+index 0000000..549effc
+--- /dev/null
++++ b/cwap/Variable.hpp
+@@ -0,0 +1,29 @@
++#pragma once
++
++#include "cwap/Type.hpp"
++
++#include <iostream>
++#include <string>
++
++namespace cwap {
++
++    class Variable {
++    public:
++        const std::string name;
++
++        const std::string spacename;
++
++        Type* cwap_type;
++
++    private:
++        static Variable* Factory(CXCursor& cursor, Namespace* space);
++
++    protected:
++        friend class Namespace;
++        friend class Function;
++
++        Variable(std::string name, std::string spacename, Type* cwap_type);
++
++        friend std::ostream& operator<<(std::ostream& stream, const Variable& self);
++    };
++}
+diff --git a/tests/cpp/TempFile.cpp b/tests/cpp/TempFile.cpp
+new file mode 100644
+index 0000000..e0a0274
+--- /dev/null
++++ b/tests/cpp/TempFile.cpp
+@@ -0,0 +1,20 @@
++#include "tests/cpp/TempFile.hpp"
++
++#include "catch.hpp"
++
++TempFile::TempFile(std::string name)
++  : name(name) {
++    this->_stream = new std::ofstream(name);
++}
++
++TempFile::TempFile()
++  : TempFile(Catch::getResultCapture().getCurrentTestName() + ".cpp") {}
++
++void TempFile::close() {
++    this->_stream->close();
++}
++
++TempFile::~TempFile() {
++    delete this->_stream;
++    std::remove(this->name.c_str());
++}
+diff --git a/tests/cpp/TempFile.hpp b/tests/cpp/TempFile.hpp
+index da1b512..232102c 100644
+--- a/tests/cpp/TempFile.hpp
++++ b/tests/cpp/TempFile.hpp
+@@ -1,6 +1,3 @@
+-#define CATCH_CONFIG_MAIN
+-#include "catch.hpp"
+-
+ #include <cstdio>
+ #include <fstream>
+ #include <string>
+@@ -9,31 +6,22 @@ class TempFile {
+ private:
+     std::ofstream* _stream;
+ 
+-    template <typename T>
++    template<typename T>
+     friend std::ofstream& operator<<(TempFile&, T);
+ 
+ public:
+     const std::string name;
+ 
+-    TempFile(std::string name)
+-      : name(name) {
+-        this->_stream = new std::ofstream(name);
+-    }
++    TempFile(std::string name);
+ 
+-    TempFile()
+-      : TempFile(Catch::getResultCapture().getCurrentTestName() + ".cpp"){};
++    TempFile();
+ 
+-    void close() {
+-        this->_stream->close();
+-    };
++    void close();
+ 
+-    ~TempFile() {
+-        delete this->_stream;
+-        std::remove(this->name.c_str());
+-    };
++    ~TempFile();
+ };
+ 
+-template <typename T>
++template<typename T>
+ std::ofstream& operator<<(TempFile& temp, T op) {
+     (*temp._stream) << op;
+     return *temp._stream;
+diff --git a/tests/cpp/TestBuiltinTypes.cpp b/tests/cpp/TestBuiltinTypes.cpp
+index 6cd7d30..63e34a1 100644
+--- a/tests/cpp/TestBuiltinTypes.cpp
++++ b/tests/cpp/TestBuiltinTypes.cpp
+@@ -1,9 +1,8 @@
+-#include "cwap/cwap.hpp"
+-
+ #include "tests/cpp/TempFile.hpp"
+ 
+-/* #define CATCH_CONFIG_MAIN */
+-/* #include "catch.hpp" */
++#include "cwap/cwap.hpp"
++
++#include "catch.hpp"
+ 
+ TEST_CASE("builtin basic types", "[basictypes]") {
+     cwap::Project proj("TestBasicTypes");
+@@ -15,9 +14,9 @@ TEST_CASE("builtin basic types", "[basictypes]") {
+         temp_file.close();
+         proj.parse(temp_file.name);
+ 
+-        cwap::CwapVariable& v = *proj.variables().at("an_integer");
++        cwap::Variable& v = *proj.variables().at("an_integer");
+         REQUIRE("an_integer" == v.name);
+-        cwap::CwapType& t = *v.cwap_type;
++        cwap::Type& t = *v.cwap_type;
+         REQUIRE("int" == t.name);
+         REQUIRE(t.is_basic);
+         REQUIRE(&t == proj.types().at("int"));
+@@ -27,9 +26,9 @@ TEST_CASE("builtin basic types", "[basictypes]") {
+         temp_file.close();
+         proj.parse(temp_file.name);
+ 
+-        cwap::CwapVariable& v = *proj.variables().at("a_float");
++        cwap::Variable& v = *proj.variables().at("a_float");
+         REQUIRE("a_float" == v.name);
+-        cwap::CwapType& t = *v.cwap_type;
++        cwap::Type& t = *v.cwap_type;
+         REQUIRE("float" == t.name);
+         REQUIRE(t.is_basic);
+         REQUIRE(&t == proj.types().at("float"));
+@@ -39,9 +38,9 @@ TEST_CASE("builtin basic types", "[basictypes]") {
+         temp_file.close();
+         proj.parse(temp_file.name);
+ 
+-        cwap::CwapVariable& v = *proj.variables().at("a_long");
++        cwap::Variable& v = *proj.variables().at("a_long");
+         REQUIRE("a_long" == v.name);
+-        cwap::CwapType& t = *v.cwap_type;
++        cwap::Type& t = *v.cwap_type;
+         REQUIRE("long" == t.name);
+         REQUIRE(t.is_basic);
+         REQUIRE(&t == proj.types().at("long"));
+@@ -51,9 +50,9 @@ TEST_CASE("builtin basic types", "[basictypes]") {
+         temp_file.close();
+         proj.parse(temp_file.name);
+ 
+-        cwap::CwapVariable& v = *proj.variables().at("a_long_long");
++        cwap::Variable& v = *proj.variables().at("a_long_long");
+         REQUIRE("a_long_long" == v.name);
+-        cwap::CwapType& t = *v.cwap_type;
++        cwap::Type& t = *v.cwap_type;
+         REQUIRE("long long" == t.name);
+         REQUIRE(t.is_basic);
+         REQUIRE(&t == proj.types().at("long long"));
+@@ -63,9 +62,9 @@ TEST_CASE("builtin basic types", "[basictypes]") {
+         temp_file.close();
+         proj.parse(temp_file.name);
+ 
+-        cwap::CwapVariable& v = *proj.variables().at("a_double");
++        cwap::Variable& v = *proj.variables().at("a_double");
+         REQUIRE("a_double" == v.name);
+-        cwap::CwapType& t = *v.cwap_type;
++        cwap::Type& t = *v.cwap_type;
+         REQUIRE("double" == t.name);
+         REQUIRE(t.is_basic);
+         REQUIRE(&t == proj.types().at("double"));
+@@ -75,6 +74,27 @@ TEST_CASE("builtin basic types", "[basictypes]") {
+     REQUIRE(proj.variables().size() == 1);
+ }
+ 
++TEST_CASE("multiple variables with same type", "[basictypes]") {
++    cwap::Project proj("TestBasicTypes");
++    REQUIRE(0 == proj.types().size());
++    TempFile temp_file;
++
++    SECTION("declared in same line") {
++        temp_file << "int a, b;" << std::endl;
++    }
++    SECTION("declared separately") {
++        temp_file << "int a;" << std::endl;
++        temp_file << "int b;" << std::endl;
++    }
++
++    temp_file.close();
++    proj.parse(temp_file.name);
++    cwap::Variable& var_a = *proj.variables().at("a");
++    cwap::Variable& var_b = *proj.variables().at("b");
++    REQUIRE(var_a.cwap_type == var_b.cwap_type); // pointer comparison
++    REQUIRE(var_a.cwap_type == proj.types().at("int"));
++}
++
+ TEST_CASE("builtin basic types in one translation unit", "[basictypes]") {
+     cwap::Project proj("TestBasicTypes");
+     REQUIRE(0 == proj.types().size());
+@@ -91,30 +111,30 @@ TEST_CASE("builtin basic types in one translation unit", "[basictypes]") {
+     REQUIRE(proj.types().size() == 5);
+     REQUIRE(proj.variables().size() == 5);
+ 
+-    cwap::CwapVariable& v_int = *proj.variables().at("an_integer");
+-    cwap::CwapType& t_int = *v_int.cwap_type;
++    cwap::Variable& v_int = *proj.variables().at("an_integer");
++    cwap::Type& t_int = *v_int.cwap_type;
+     REQUIRE(&t_int == proj.types().at("int"));
+ 
+-    cwap::CwapVariable& v_float = *proj.variables().at("a_float");
+-    cwap::CwapType& t_float = *v_float.cwap_type;
++    cwap::Variable& v_float = *proj.variables().at("a_float");
++    cwap::Type& t_float = *v_float.cwap_type;
+     REQUIRE(&t_float == proj.types().at("float"));
+     REQUIRE(&t_float != &t_int);
+ 
+-    cwap::CwapVariable& v_long = *proj.variables().at("a_long");
+-    cwap::CwapType& t_long = *v_long.cwap_type;
++    cwap::Variable& v_long = *proj.variables().at("a_long");
++    cwap::Type& t_long = *v_long.cwap_type;
+     REQUIRE(&t_long == proj.types().at("long"));
+     REQUIRE(&t_long != &t_int);
+     REQUIRE(&t_long != &t_float);
+ 
+-    cwap::CwapVariable& v_long_long = *proj.variables().at("a_long_long");
+-    cwap::CwapType& t_long_long = *v_long_long.cwap_type;
++    cwap::Variable& v_long_long = *proj.variables().at("a_long_long");
++    cwap::Type& t_long_long = *v_long_long.cwap_type;
+     REQUIRE(&t_long_long == proj.types().at("long long"));
+     REQUIRE(&t_long_long != &t_int);
+     REQUIRE(&t_long_long != &t_float);
+     REQUIRE(&t_long_long != &t_long);
+ 
+-    cwap::CwapVariable& v_double = *proj.variables().at("a_double");
+-    cwap::CwapType& t_double = *v_double.cwap_type;
++    cwap::Variable& v_double = *proj.variables().at("a_double");
++    cwap::Type& t_double = *v_double.cwap_type;
+     REQUIRE(&t_double == proj.types().at("double"));
+     REQUIRE(&t_double != &t_int);
+     REQUIRE(&t_double != &t_float);
+diff --git a/tests/cpp/TestFunctions.cpp b/tests/cpp/TestFunctions.cpp
+index 54a8eb8..e7febd6 100644
+--- a/tests/cpp/TestFunctions.cpp
++++ b/tests/cpp/TestFunctions.cpp
+@@ -1,8 +1,8 @@
++#include "tests/cpp/TempFile.hpp"
++
+ #include "cwap/cwap.hpp"
+ 
+-#include <cinttypes>
+-#include <iostream>
+-#include <sstream>
++#include "catch.hpp"
+ 
+ void first() {
+     return;
+@@ -20,31 +20,40 @@ int third(int a, int b, int c) {
+     return a + b + c;
+ }
+ 
+-#define ASSERT_EQ(expected, actual)                                                                \
+-    if (!((expected) == (actual))) {                                                               \
+-        std::ostringstream err_msg;                                                                \
+-        err_msg << "Objects not equal. Got (" << actual << "), but expected (" << expected << ")"; \
+-        throw err_msg.str();                                                                       \
+-    }
++TEST_CASE("functions", "[functions]") {
++    cwap::Project proj("TestFunctions");
++    REQUIRE(0 == proj.types().size());
++    TempFile temp_file;
+ 
+-#define ASSERT_NE(expected, actual)                                                                \
+-    if (!((expected) != (actual))) {                                                               \
+-        std::ostringstream err_msg;                                                                \
+-        err_msg << "Objects equal, but should not be. Got (" << actual << ") and (" << expected    \
+-                << ")";                                                                            \
+-        throw err_msg.str();                                                                       \
+-    }
++    SECTION("void (void)") {
++        temp_file << "void first() { return; } ;" << std::endl;
++        temp_file.close();
++        proj.parse(temp_file.name);
+ 
+-int main(int argc, char* argv[]) {
+-    try {
+-        cwap::Project proj("TestFunctions");
+-        proj.parse("tests/cpp/TestFunctions.cpp");
+-
+-        {
+-            cwap::CwapFunction& f = *proj.functions().at("first");
+-            ASSERT_EQ("first", f.name);
+-        }
+-    } catch (std::string& err_str) {
+-        std::cout << "Test failed. error: " << err_str << std::endl;
++        cwap::Function& func = *proj.functions().at("first");
++        REQUIRE("first" == func.name);
++        REQUIRE(proj.types().at("void") == func.return_type);
++        REQUIRE(func.arguments().size() == 0);
++    }
++    SECTION("void (int)") {
++        temp_file << "void func(int a) { return; } ;" << std::endl;
++        temp_file.close();
++        proj.parse(temp_file.name);
++
++        cwap::Function& func = *proj.functions().at("func");
++        REQUIRE(proj.types().at("void") == func.return_type);
++        REQUIRE(func.arguments().size() == 1);
++        auto arg_a = func.arguments()[0];
++        REQUIRE(arg_a->name == "a");
++    }
++    SECTION("int (void)") {
++        temp_file << "int first() { return 1; }" << std::endl;
++        temp_file.close();
++        proj.parse(temp_file.name);
++
++        cwap::Function& func = *proj.functions().at("first");
++        REQUIRE("first" == func.name);
++        REQUIRE(proj.types().at("int") == func.return_type);
++        REQUIRE(func.arguments().size() == 0);
+     }
+ }
+diff --git a/tests/cpp/TestMain.cpp b/tests/cpp/TestMain.cpp
+new file mode 100644
+index 0000000..0c7c351
+--- /dev/null
++++ b/tests/cpp/TestMain.cpp
+@@ -0,0 +1,2 @@
++#define CATCH_CONFIG_MAIN
++#include "catch.hpp"
+diff --git a/tests/cpp/TestNamespaces.cpp b/tests/cpp/TestNamespaces.cpp
+new file mode 100644
+index 0000000..0743167
+--- /dev/null
++++ b/tests/cpp/TestNamespaces.cpp
+@@ -0,0 +1,22 @@
++#include "tests/cpp/TempFile.hpp"
++
++#include "cwap/cwap.hpp"
++
++#include "catch.hpp"
++
++TEST_CASE("namespaces with builtin types", "[namespaces]") {
++    cwap::Project proj("TestFunctions");
++    REQUIRE(0 == proj.types().size());
++    TempFile temp_file;
++
++    SECTION("int in two namespaces") {
++        temp_file << "int a;" << std::endl;
++        temp_file << "namespace b {" << std::endl;
++        temp_file << "    int a;" << std::endl;
++        temp_file << "}" << std::endl;
++        temp_file.close();
++        proj.parse(temp_file.name);
++
++        REQUIRE(1 == proj.types().size());
++    }
++}
+diff --git a/tests/cpp/TestSpacenames.cpp b/tests/cpp/TestSpacenames.cpp
+deleted file mode 100644
+index a038236..0000000
+--- a/tests/cpp/TestSpacenames.cpp
++++ /dev/null
+@@ -1,49 +0,0 @@
+-#include "cwap/cwap.hpp"
+-
+-#include <cinttypes>
+-#include <iostream>
+-#include <sstream>
+-
+-namespace empty {}
+-
+-namespace one {
+-    int a;
+-    namespace two {
+-        int a;
+-        int b;
+-    }
+-}
+-
+-#define ASSERT_EQ(expected, actual)                                                                \
+-    if (!((expected) == (actual))) {                                                               \
+-        std::ostringstream err_msg;                                                                \
+-        err_msg << "Objects not equal. Got (" << actual << "), but expected (" << expected << ")"; \
+-        throw err_msg.str();                                                                       \
+-    }
+-
+-#define ASSERT_NE(expected, actual)                                                                \
+-    if (!((expected) != (actual))) {                                                               \
+-        std::ostringstream err_msg;                                                                \
+-        err_msg << "Objects equal, but should not be. Got (" << actual << ") and (" << expected    \
+-                << ")";                                                                            \
+-        throw err_msg.str();                                                                       \
+-    }
+-
+-int main(int argc, char* argv[]) {
+-    try {
+-        cwap::Project proj("TestSpacenames");
+-        throw "not working";
+-        /* ASSERT_EQ(0, proj.size()); */
+-        /* proj.parse("tests/cpp/TestSpacenames.cpp"); */
+-        /* auto names = proj.names(); */
+-        /* std::cout << "There are " << names.size() << " registerd names" << std::endl; */
+-        /* for (auto name : names) { */
+-        /*     std::cout << name << std::endl; */
+-        /* } */
+-        /* std::cout << "There are " << names.size() << " registerd names" << std::endl; */
+-        /* ASSERT_EQ(8, proj.size()); */
+-
+-    } catch (std::string& err_str) {
+-        std::cout << "Test failed. error: " << err_str << std::endl;
+-    }
+-}
