@@ -1,4 +1,6 @@
 #include "cwap/Type.hpp"
+#include "cwap/Attribute.hpp"
+#include "cwap/Location.hpp"
 #include "cwap/Namespace.hpp"
 
 namespace cwap {
@@ -6,42 +8,94 @@ namespace cwap {
     Type::Type(std::string name,
                Namespace const* space,
                bool is_basic,
-               bool is_function,
                bool is_struct,
-               bool is_class,
-               bool is_static)
+               bool is_class)
       : name(name)
       , space(space)
       , is_basic(is_basic)
-      , is_function(is_function)
       , is_struct(is_struct)
-      , is_class(is_class)
-      , is_static(is_static){};
+      , is_class(is_class){};
 
     Type* Type::Factory(CXType& type, Namespace const* space) {
         CXString type_spelling = clang_getTypeSpelling(type);
         std::string type_name(clang_getCString(type_spelling));
         clang_disposeString(type_spelling);
+        return new Type(
+          type_name, space, CXType_Void < type.kind && type.kind < CXType_NullPtr, false, false);
+    }
+
+    Type* Type::Factory(CXCursor& cursor, Namespace const* space) {
+        CXType clang_type = clang_getCursorType(cursor);
+        CXString type_spelling = clang_getTypeSpelling(clang_type);
+        std::string type_name(clang_getCString(type_spelling));
+        clang_disposeString(type_spelling);
         return new Type(type_name,
                         space,
-                        CXType_Void < type.kind && type.kind < CXType_NullPtr,
                         false,
-                        false,
-                        false,
-                        false);
+                        cursor.kind == CXCursor_ClassDecl,
+                        cursor.kind == CXCursor_StructDecl);
+    }
+
+    CXChildVisitResult Type::visit(CXCursor& cursor, CXCursor& parent) {
+        Location location = Location::Create(cursor);
+        CXCursorKind cursor_kind = clang_getCursorKind(cursor);
+        if (!clang_isDeclaration(cursor_kind)) {
+            return CXChildVisit_Continue;
+        }
+        switch (cursor.kind) {
+            {
+            case CXCursor_VarDecl:
+                Attribute* cv = Attribute::Factory(cursor, this, this);
+                this->_attributes[cv->name] = cv;
+                break;
+            }
+            {
+            case CXCursor_FunctionDecl:
+                Function* cf = Function::Factory(cursor, const_cast<Namespace*>(this->space), this);
+                this->_functions[cf->name] = cf;
+                break;
+            }
+            {
+            case CXCursor_ClassDecl:
+            case CXCursor_StructDecl:
+                Type* type = Type::Factory(cursor, const_cast<Namespace*>(this->space));
+                type->parent = this;
+                this->_types[type->name] = type;
+                // recursive
+                clang_visitChildren(cursor, Type::VisitChildrenCallback, type);
+                break;
+            }
+            {
+            default:
+                CXString cursor_kind_name = clang_getCursorKindSpelling(cursor.kind);
+                std::cerr << "I do not know how to interpret declaration of "
+                          << clang_getCString(cursor_kind_name) << " (" << cursor.kind << ")"
+                          << std::endl;
+                clang_disposeString(cursor_kind_name);
+                break;
+            }
+        }
+
+        return CXChildVisit_Continue;
+    }
+
+    const std::unordered_map<std::string, Type*> Type::types() const {
+        return this->_types;
+    }
+
+    const std::unordered_map<std::string, Attribute*> Type::attributes() const {
+        return this->_attributes;
+    }
+
+    const std::unordered_map<std::string, Function*> Type::functions() const {
+        return this->_functions;
     }
 
     std::ostream& operator<<(std::ostream& stream, const Type& self) {
         stream << "<Type ";
 
-        if (self.is_static) {
-            stream << "static ";
-        }
         if (self.is_basic) {
             stream << "basic type ";
-        }
-        if (self.is_function) {
-            stream << "function ";
         }
         if (self.is_struct) {
             stream << "struct ";

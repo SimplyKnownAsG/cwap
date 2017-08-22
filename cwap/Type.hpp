@@ -1,41 +1,60 @@
 #pragma once
 
+#include "cwap/ClangVisitor.hpp"
+
 #include <clang-c/Index.h>
 
 #include <string>
+#include <unordered_map>
 
 namespace cwap {
 
     class Namespace;
+    class Type;
+    class Attribute;
+    class Function;
 
-    class Type {
-    protected:
-        friend class Namespace;
+    class Type : protected ClangVisitor {
+    private:
+        std::unordered_map<std::string, Type*> _types;
 
-        Type(std::string name,
-             Namespace const* space,
-             bool is_basic,
-             bool is_struct,
-             bool is_function,
-             bool is_class,
-             bool is_static);
+        std::unordered_map<std::string, Attribute*> _attributes;
 
-        static Type* Factory(CXType& cursor, Namespace const* space);
+        std::unordered_map<std::string, Function*> _functions;
 
     public:
         const std::string name;
 
         Namespace const* space;
 
-        const bool is_basic;
+        Type const* parent;
 
-        const bool is_function;
+        const bool is_basic;
 
         const bool is_struct;
 
         const bool is_class;
 
-        const bool is_static;
+        const std::unordered_map<std::string, Type*> types() const;
+
+        const std::unordered_map<std::string, Attribute*> attributes() const;
+
+        const std::unordered_map<std::string, Function*> functions() const;
+
+    private:
+        friend class Namespace;
+
+        Type(std::string name,
+             Namespace const* space,
+             bool is_basic,
+             bool is_struct,
+             bool is_class);
+
+        static Type* Factory(CXType& cursor, Namespace const* space);
+
+        static Type* Factory(CXCursor& cursor, Namespace const* space);
+
+        CXChildVisitResult visit(CXCursor& cursor, CXCursor& parent) override;
 
         friend std::ostream& operator<<(std::ostream& stream, const Type& self);
     };

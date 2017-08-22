@@ -1,7 +1,7 @@
 #pragma once
 
+#include "cwap/Parameter.hpp"
 #include "cwap/Type.hpp"
-#include "cwap/Variable.hpp"
 
 #include <clang-c/Index.h>
 
@@ -15,10 +15,13 @@ namespace cwap {
     class Function {
     private:
         friend class Namespace;
+        friend class Type;
 
-        std::vector<Variable*> _arguments;
+        std::vector<Parameter*> _parameters;
 
-        Function(std::string name, Namespace const* space);
+        Function(std::string name, const Namespace* space, const Type* bound_parent);
+
+        static Function* Factory(CXCursor& cursor, Namespace* space, Type* parent);
 
         static Function* Factory(CXCursor& cursor, Namespace* space);
 
@@ -27,8 +30,10 @@ namespace cwap {
 
         const Namespace* space;
 
+        const Type* bound_parent;
+
         const Type* return_type;
 
-        const std::vector<Variable*> arguments() const;
+        const std::vector<Parameter*> parameters() const;
     };
 }

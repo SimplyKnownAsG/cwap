@@ -1,43 +1,74 @@
 #include "cwap/Namespace.hpp"
+#include "cwap/ConvenientClang.hpp"
 #include "cwap/Location.hpp"
 
-#include <algorithm>
 #include <string>
 
 namespace cwap {
 
-    CXChildVisitResult Namespace::VisitChildrenCallback(CXCursor cursor,
-                                                        CXCursor parent,
-                                                        CXClientData client_data) {
-        Namespace* space = (Namespace*)client_data;
+    Namespace::Namespace(std::string name)
+      : name(name) {}
+
+    CXChildVisitResult Namespace::visit(CXCursor& cursor, CXCursor& parent) {
         Location location = Location::Create(cursor);
         CXCursorKind cursor_kind = clang_getCursorKind(cursor);
         if (!clang_isDeclaration(cursor_kind)) {
-            return CXChildVisit_Recurse;
+            return CXChildVisit_Continue;
         }
         switch (cursor.kind) {
             {
             case CXCursor_VarDecl:
-                Variable* cv = Variable::Factory(cursor, space);
-                space->_variables[cv->name] = cv;
+                Variable* cv = Variable::Factory(cursor, this->get_type(cursor), this);
+                this->_variables[cv->name] = cv;
                 break;
             }
             {
             case CXCursor_FunctionDecl:
-                Function* cf = Function::Factory(cursor, space);
-                space->_functions[cf->name] = cf;
+                Function* cf = Function::Factory(cursor, this);
+                this->_functions[cf->name] = cf;
+                break;
             }
-            { default:; }
+            {
+            case CXCursor_ClassDecl:
+            case CXCursor_StructDecl:
+                Type* type = Type::Factory(cursor, this);
+                this->_types[type->name] = type;
+                // recursive
+                clang_visitChildren(cursor, Namespace::VisitChildrenCallback, type);
+                break;
+            }
+            {
+            case CXCursor_Namespace:
+                std::string space_name = get_name(cursor);
+                Namespace* sub_space = NULL;
+                if (this->_namespaces.count(space_name)) {
+                    sub_space = this->_namespaces.at(space_name);
+                } else {
+                    sub_space = new Namespace(space_name);
+                    this->_namespaces[space_name] = sub_space;
+                }
+                // recursive!
+                clang_visitChildren(cursor, Type::VisitChildrenCallback, sub_space);
+                break;
+            }
+            {
+            default:
+                CXString cursor_kind_name = clang_getCursorKindSpelling(cursor.kind);
+                std::cerr << "I do not know how to interpret declaration of "
+                          << clang_getCString(cursor_kind_name) << " (" << cursor.kind << ")"
+                          << std::endl;
+                clang_disposeString(cursor_kind_name);
+                break;
+            }
         }
 
-        // visit children recursively
-        clang_visitChildren(cursor, Namespace::VisitChildrenCallback, client_data);
-
-        return CXChildVisit_Recurse;
+        return CXChildVisit_Continue;
     }
 
-    Namespace::Namespace(std::string name)
-      : name(name) {}
+    Type* Namespace::get_type(CXCursor& cursor) {
+        CXType clang_type = clang_getCursorType(cursor);
+        return this->get_type(clang_type);
+    }
 
     Type* Namespace::get_type(CXType& clang_type) {
         Type* ct = Type::Factory(clang_type, this);
@@ -66,14 +97,4 @@ namespace cwap {
     const std::unordered_map<std::string, Namespace*> Namespace::namespaces() const {
         return this->_namespaces;
     }
-
-    /* std::vector<std::string> Namespace::names() { */
-    /*     std::vector<std::string> names; */
-    /*     std::transform( */
-    /*       this->_types.begin(), */
-    /*       this->_types.end(), */
-    /*       std::back_inserter(names), */
-    /*       [](decltype(this->types)::value_type const& key_val) { return key_val.first; }); */
-    /*     return names; */
-    /* } */
 }
