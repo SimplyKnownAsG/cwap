@@ -26,8 +26,21 @@ namespace cwap {
             case CXCursor_FunctionDecl:
                 Function* cf = Function::Factory(cursor, space);
                 space->_functions[cf->name] = cf;
+                break;
             }
-            { default:; }
+            /* { */
+            /* case CXCursor_ClassDecl: */
+            /*     Function* cf = Function::Factory(cursor, space); */
+            /*     space->_functions[cf->name] = cf; */
+            /*     break; */
+            /* } */
+            {
+            default:
+                CXString kind_spelling = clang_getCursorKindSpelling(cursor.kind);
+                std::cerr << "I do not know how to interpret declaration of "
+                          << clang_getCString(kind_spelling) << " (" << cursor.kind << ")"
+                          << std::endl;
+            }
         }
 
         // visit children recursively

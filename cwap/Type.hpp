@@ -16,7 +16,6 @@ namespace cwap {
              Namespace const* space,
              bool is_basic,
              bool is_struct,
-             bool is_function,
              bool is_class,
              bool is_static);
 
@@ -28,8 +27,6 @@ namespace cwap {
         Namespace const* space;
 
         const bool is_basic;
-
-        const bool is_function;
 
         const bool is_struct;
 

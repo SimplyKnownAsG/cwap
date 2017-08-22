@@ -4,22 +4,6 @@
 
 #include "catch.hpp"
 
-void first() {
-    return;
-}
-
-int second() {
-    return 1;
-}
-
-int third(int a, int b) {
-    return a + b;
-}
-
-int third(int a, int b, int c) {
-    return a + b + c;
-}
-
 TEST_CASE("functions", "[functions]") {
     cwap::Project proj("TestFunctions");
     REQUIRE(0 == proj.types().size());
