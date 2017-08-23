@@ -25,7 +25,9 @@ namespace cwap {
             {
             case CXCursor_FunctionDecl:
                 Function* cf = Function::Factory(cursor, this);
-                this->_functions[cf->name] = cf;
+                if (cf != NULL) {
+                    this->_functions.push_back(cf);
+                }
                 break;
             }
             {
@@ -90,7 +92,7 @@ namespace cwap {
         return this->_variables;
     }
 
-    const std::unordered_map<std::string, Function*> Namespace::functions() const {
+    const std::vector<Function*> Namespace::functions() const {
         return this->_functions;
     }
 

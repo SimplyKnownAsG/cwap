@@ -7,4 +7,11 @@ namespace cwap {
         clang_disposeString(spell);
         return name;
     }
+
+    std::string get_usr(const CXCursor& cursor) {
+        CXString spell = clang_getCursorUSR(cursor);
+        std::string usr(clang_getCString(spell));
+        clang_disposeString(spell);
+        return usr;
+    }
 }

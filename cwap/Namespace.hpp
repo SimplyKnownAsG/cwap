@@ -21,7 +21,7 @@ namespace cwap {
 
         std::unordered_map<std::string, Variable*> _variables;
 
-        std::unordered_map<std::string, Function*> _functions;
+        std::vector<Function*> _functions;
 
         std::unordered_map<std::string, Namespace*> _namespaces;
 
@@ -41,7 +41,7 @@ namespace cwap {
 
         const std::unordered_map<std::string, Variable*> variables() const;
 
-        const std::unordered_map<std::string, Function*> functions() const;
+        const std::vector<Function*> functions() const;
 
         const std::unordered_map<std::string, Namespace*> namespaces() const;
     };

@@ -19,7 +19,10 @@ namespace cwap {
 
         std::vector<Parameter*> _parameters;
 
-        Function(std::string name, const Namespace* space, const Type* bound_parent);
+        Function(std::string name,
+                 std::string usr,
+                 const Namespace* space,
+                 const Type* bound_parent);
 
         static Function* Factory(CXCursor& cursor, Namespace* space, Type* parent);
 
@@ -27,6 +30,8 @@ namespace cwap {
 
     public:
         const std::string name;
+
+        const std::string usr;
 
         const Namespace* space;
 

@@ -20,7 +20,7 @@ namespace cwap {
 
         std::unordered_map<std::string, Attribute*> _attributes;
 
-        std::unordered_map<std::string, Function*> _functions;
+        std::unordered_map<std::string, Function*> _methods;
 
     public:
         const std::string name;
@@ -39,7 +39,7 @@ namespace cwap {
 
         const std::unordered_map<std::string, Attribute*> attributes() const;
 
-        const std::unordered_map<std::string, Function*> functions() const;
+        const std::unordered_map<std::string, Function*> methods() const;
 
     private:
         friend class Namespace;

@@ -7,13 +7,26 @@
 
 namespace cwap {
 
-    Function::Function(std::string name, Namespace const* space, const Type* bound_parent)
+    Function::Function(std::string name,
+                       std::string usr,
+                       Namespace const* space,
+                       const Type* bound_parent)
       : name(name)
+      , usr(usr)
       , space(space)
       , bound_parent(bound_parent){};
 
     Function* Function::Factory(CXCursor& cursor, Namespace* space, Type* bound_parent) {
-        Function* func = new Function(get_name(cursor), space, bound_parent);
+        std::string usr = get_usr(cursor);
+
+        for (auto existing_func : space->functions()) {
+            // TODO: slow
+            if (existing_func->usr == usr) {
+                return (Function*)NULL;
+            }
+        }
+
+        Function* func = new Function(get_name(cursor), get_usr(cursor), space, bound_parent);
         CXType clang_func_type = clang_getCursorType(cursor);
         CXType clang_result_type = clang_getResultType(clang_func_type);
         func->return_type = space->get_type(clang_result_type);
@@ -32,26 +45,4 @@ namespace cwap {
     const std::vector<Parameter*> Function::parameters() const {
         return this->_parameters;
     }
-
-    /* std::ostream& operator<<(std::ostream& stream, const Function& self) { */
-    /*     stream << "<Function "; */
-
-    /*     if (self.is_static) { */
-    /*         stream << "static "; */
-    /*     } */
-    /*     if (self.is_basic) { */
-    /*         stream << "basic type "; */
-    /*     } */
-    /*     if (self.is_function) { */
-    /*         stream << "function "; */
-    /*     } */
-    /*     if (self.is_struct) { */
-    /*         stream << "struct "; */
-    /*     } */
-    /*     if (self.is_class) { */
-    /*         stream << "class "; */
-    /*     } */
-    /*     stream << self.name << ">"; */
-    /*     return stream; */
-    /* } */
 }

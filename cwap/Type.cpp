@@ -32,8 +32,8 @@ namespace cwap {
         return new Type(type_name,
                         space,
                         false,
-                        cursor.kind == CXCursor_ClassDecl,
-                        cursor.kind == CXCursor_StructDecl);
+                        cursor.kind == CXCursor_StructDecl,
+                        cursor.kind == CXCursor_ClassDecl);
     }
 
     CXChildVisitResult Type::visit(CXCursor& cursor, CXCursor& parent) {
@@ -50,9 +50,9 @@ namespace cwap {
                 break;
             }
             {
-            case CXCursor_FunctionDecl:
+            case CXCursor_CXXMethod:
                 Function* cf = Function::Factory(cursor, const_cast<Namespace*>(this->space), this);
-                this->_functions[cf->name] = cf;
+                this->_methods[cf->name] = cf;
                 break;
             }
             {
@@ -87,8 +87,8 @@ namespace cwap {
         return this->_attributes;
     }
 
-    const std::unordered_map<std::string, Function*> Type::functions() const {
-        return this->_functions;
+    const std::unordered_map<std::string, Function*> Type::methods() const {
+        return this->_methods;
     }
 
     std::ostream& operator<<(std::ostream& stream, const Type& self) {

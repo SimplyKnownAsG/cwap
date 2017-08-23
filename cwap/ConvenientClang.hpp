@@ -5,4 +5,6 @@
 
 namespace cwap {
     std::string get_name(const CXCursor& cursor);
+
+    std::string get_usr(const CXCursor& cursor);
 }
