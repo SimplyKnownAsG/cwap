@@ -52,7 +52,9 @@ namespace cwap {
             {
             case CXCursor_CXXMethod:
                 Function* cf = Function::Factory(cursor, const_cast<Namespace*>(this->space), this);
-                this->_methods[cf->name] = cf;
+                if (cf != NULL) {
+                    this->_methods.push_back(cf);
+                }
                 break;
             }
             {
@@ -87,7 +89,7 @@ namespace cwap {
         return this->_attributes;
     }
 
-    const std::unordered_map<std::string, Function*> Type::methods() const {
+    const std::vector<Function*> Type::methods() const {
         return this->_methods;
     }
 

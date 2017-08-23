@@ -6,6 +6,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace cwap {
 
@@ -20,7 +21,7 @@ namespace cwap {
 
         std::unordered_map<std::string, Attribute*> _attributes;
 
-        std::unordered_map<std::string, Function*> _methods;
+        std::vector<Function*> _methods;
 
     public:
         const std::string name;
@@ -39,7 +40,7 @@ namespace cwap {
 
         const std::unordered_map<std::string, Attribute*> attributes() const;
 
-        const std::unordered_map<std::string, Function*> methods() const;
+        const std::vector<Function*> methods() const;
 
     private:
         friend class Namespace;
