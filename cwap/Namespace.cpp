@@ -1,6 +1,7 @@
 #include "cwap/Namespace.hpp"
 #include "cwap/ConvenientClang.hpp"
 #include "cwap/Location.hpp"
+#include "cwap/Project.hpp"
 
 #include <string>
 
@@ -9,8 +10,16 @@ namespace cwap {
     Namespace::Namespace(std::string name)
       : name(name) {}
 
+    Namespace::Namespace(std::string name, Project* project)
+      : name(name) {
+        this->project = project;
+    }
+
     CXChildVisitResult Namespace::visit(CXCursor& cursor, CXCursor& parent) {
         Location location = Location::Create(cursor);
+        if (location.file_name != this->project->filename) {
+            return CXChildVisit_Continue;
+        }
         CXCursorKind cursor_kind = clang_getCursorKind(cursor);
         if (!clang_isDeclaration(cursor_kind)) {
             return CXChildVisit_Continue;
@@ -46,7 +55,7 @@ namespace cwap {
                 if (this->_namespaces.count(space_name)) {
                     sub_space = this->_namespaces.at(space_name);
                 } else {
-                    sub_space = new Namespace(space_name);
+                    sub_space = new Namespace(space_name, this->project);
                     this->_namespaces[space_name] = sub_space;
                 }
                 // recursive!
@@ -98,5 +107,40 @@ namespace cwap {
 
     const std::unordered_map<std::string, Namespace*> Namespace::namespaces() const {
         return this->_namespaces;
+    }
+
+    void Namespace::dump_yaml(std::ostream& stream) {
+        stream << "{" << std::endl;
+        stream << "namespace: '" << this->name << "'," << std::endl;
+
+        stream << "functions: [" << std::endl;
+        for (auto func : this->functions()) {
+            func->dump_yaml(stream);
+            stream << "," << std::endl;
+        }
+        stream << "]," << std::endl;
+
+        stream << "variables: [" << std::endl;
+        for (auto name_variable : this->variables()) {
+            name_variable.second->dump_yaml(stream);
+            stream << "," << std::endl;
+        }
+        stream << "]," << std::endl;
+
+        stream << "types: [" << std::endl;
+        for (auto name_type : this->types()) {
+            name_type.second->dump_yaml(stream);
+            stream << "," << std::endl;
+        }
+        stream << "]," << std::endl;
+
+        stream << "namespaces: [" << std::endl;
+        for (auto name_space : this->namespaces()) {
+            name_space.second->dump_yaml(stream);
+            stream << "," << std::endl;
+        }
+        stream << "]," << std::endl;
+
+        stream << "}" << std::endl;
     }
 }

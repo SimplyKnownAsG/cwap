@@ -45,4 +45,19 @@ namespace cwap {
     const std::vector<Parameter*> Function::parameters() const {
         return this->_parameters;
     }
+
+    void Function::dump_yaml(std::ostream& stream) const {
+        stream << "{" << std::endl;
+        stream << "name: '" << this->name << "'," << std::endl;
+        stream << "return_type: '" << this->return_type->name << "'," << std::endl;
+
+        stream << "parameters: [" << std::endl;
+        for (auto param : this->parameters()) {
+            param->dump_yaml(stream);
+            stream << "," << std::endl;
+        }
+        stream << "]" << std::endl;
+
+        stream << "}" << std::endl;
+    }
 }

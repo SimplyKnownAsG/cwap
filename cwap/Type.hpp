@@ -24,6 +24,8 @@ namespace cwap {
         std::vector<Function*> _methods;
 
     public:
+        virtual ~Type() = default;
+
         const std::string name;
 
         Namespace const* space;
@@ -41,6 +43,8 @@ namespace cwap {
         const std::unordered_map<std::string, Attribute*> attributes() const;
 
         const std::vector<Function*> methods() const;
+
+        void dump_yaml(std::ostream& stream) const;
 
     private:
         friend class Namespace;

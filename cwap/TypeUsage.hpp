@@ -3,6 +3,7 @@
 #include "cwap/ConvenientClang.hpp"
 #include "cwap/Type.hpp"
 
+#include <ostream>
 #include <string>
 
 namespace cwap {
@@ -15,6 +16,13 @@ namespace cwap {
         Type* cwap_type;
 
         const TParent* parent;
+
+        void dump_yaml(std::ostream& stream) const {
+            stream << "{" << std::endl;
+            stream << "name: '" << this->name << "'," << std::endl;
+            stream << "type: '" << this->cwap_type->name << "'" << std::endl;
+            stream << "}" << std::endl;
+        }
 
     protected:
         static TConcrete* Factory(CXCursor& cursor, Type* type, TParent* parent) {

@@ -108,4 +108,32 @@ namespace cwap {
         stream << self.name << ">";
         return stream;
     }
+
+    void Type::dump_yaml(std::ostream& stream) const {
+        stream << "{" << std::endl;
+        stream << "name: '" << this->name << "'," << std::endl;
+
+        stream << "methods: [" << std::endl;
+        for (auto method : this->methods()) {
+            method->dump_yaml(stream);
+            stream << "," << std::endl;
+        }
+        stream << "]," << std::endl;
+
+        stream << "attributes: [" << std::endl;
+        for (auto name_attribute : this->attributes()) {
+            name_attribute.second->dump_yaml(stream);
+            stream << "," << std::endl;
+        }
+        stream << "]," << std::endl;
+
+        stream << "types: [" << std::endl;
+        for (auto name_type : this->types()) {
+            name_type.second->dump_yaml(stream);
+            stream << "," << std::endl;
+        }
+        stream << "]" << std::endl;
+
+        stream << "}" << std::endl;
+    }
 }

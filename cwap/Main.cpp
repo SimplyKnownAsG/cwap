@@ -13,16 +13,25 @@ void show_clang_version(void) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 2) {
-        std::cout << argv[0] << "<project name> <file> [clang arguments]" << std::endl;
-        exit(1);
+    try {
+        if (argc <= 2) {
+            std::cout << argv[0] << " <project name> <file> [clang arguments]" << std::endl;
+            exit(1);
+        }
+
+        show_clang_version();
+
+        cwap::Project proj(argv[1]);
+
+        std::vector<std::string> args(argv + 3, argv + argc);
+        proj.parse(argv[2], args);
+
+        proj.write_yaml();
+
+        return 0;
+    } catch (std::exception& exc) {
+        std::cerr << "Program terminating unsuccessfully. exception message:" << std::endl;
+        std::cerr << exc.what() << std::endl;
     }
-
-    show_clang_version();
-
-    std::vector<std::string> args(argv + 3, argv + argc);
-
-    cwap::Project proj(argv[1]);
-    proj.parse(argv[2]);
-    return 0;
+    return 1;
 }

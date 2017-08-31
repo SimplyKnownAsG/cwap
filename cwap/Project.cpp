@@ -1,7 +1,8 @@
 #include "cwap/Project.hpp"
-#include <algorithm>
 
+#include <algorithm>
 #include <clang-c/Index.h>
+#include <fstream>
 #include <iostream>
 #include <signal.h>
 #include <stdio.h>
@@ -42,7 +43,9 @@ namespace cwap {
 #endif
 
     Project::Project(std::string name)
-      : Namespace(name) {}
+      : Namespace(name) {
+        this->project = this;
+    }
 
     void Project::parse(std::string filename) {
         std::vector<std::string> empty;
@@ -55,11 +58,13 @@ namespace cwap {
             installed_handler = install_handler();
         }
 #endif
+        this->filename = filename;
         auto numArgs = clang_args.size();
 
         CXIndex index = clang_createIndex(1, 1);
 
         std::vector<const char*> c_style_args;
+        c_style_args.resize(clang_args.size(), nullptr);
 
         std::transform(clang_args.begin(),
                        clang_args.end(),
@@ -84,5 +89,10 @@ namespace cwap {
 
         clang_disposeTranslationUnit(tu);
         clang_disposeIndex(index);
+    }
+
+    void Project::write_yaml() {
+        std::ofstream yaml(this->name + ".yaml");
+        this->dump_yaml(yaml);
     }
 }

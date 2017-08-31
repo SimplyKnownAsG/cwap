@@ -87,7 +87,7 @@ test_py: $(PY_EXT)
 $(LIB$(PROJECT)): $(filter-out %Main.obj %main.obj,$(OBJ)) $(OBJ_DIR)/$(PROJECT)/Version.obj | $(TARGET_DIRS) $(HEADER_LIST)
 	$(call colorecho,$(LDSTATIC) $^)
 
-$($(PROJECT)EXEC): $(LIB$(PROJECT)) $(filter %Main.obj %main.obj,$(OBJ)) | $(TARGET_DIRS)
+$($(PROJECT)EXEC): $(filter %Main.obj %main.obj,$(OBJ)) $(LIB$(PROJECT)) | $(TARGET_DIRS)
 	$(call colorecho,$(LDEXE) $^ $(CLANG_LD_FLAGS))
 
 $(PY_EXT): $(LIB$(PROJECT)) $(SRC_DIR)/$(PROJECT)_wrap.cpp | $(TARGET_DIRS)

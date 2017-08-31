@@ -40,5 +40,7 @@ namespace cwap {
         const Type* return_type;
 
         const std::vector<Parameter*> parameters() const;
+
+        void dump_yaml(std::ostream& stream) const;
     };
 }

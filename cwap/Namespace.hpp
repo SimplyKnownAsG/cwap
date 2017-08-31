@@ -14,6 +14,7 @@
 namespace cwap {
 
     class Namespace;
+    class Project;
 
     class Namespace : protected ClangVisitor {
     private:
@@ -26,11 +27,17 @@ namespace cwap {
         std::unordered_map<std::string, Namespace*> _namespaces;
 
     protected:
+        Project* project;
+
         CXChildVisitResult visit(CXCursor& cursor, CXCursor& parent) override;
 
         Namespace(const std::string name);
 
+        Namespace(const std::string name, Project* project);
+
     public:
+        ~Namespace() = default;
+
         const std::string name;
 
         Type* get_type(CXCursor& clang_type);
@@ -44,5 +51,7 @@ namespace cwap {
         const std::vector<Function*> functions() const;
 
         const std::unordered_map<std::string, Namespace*> namespaces() const;
+
+        void dump_yaml(std::ostream& stream);
     };
 }
