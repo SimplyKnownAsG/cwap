@@ -29,8 +29,8 @@ $(PROJECT)EXEC=$(BIN_DIR)/$(PROJECT).exe
 
 ifeq ($(MAKECMDGOALS),debug)
 	BUILD_DIR=debug
-	CXXFLAGS+= -g
-	LDFLAGS+= -g
+	CXXFLAGS+= -g -O0
+	LDFLAGS+= -g -O0
 else
 	CXXFLAGS+= -O2
 	BUILD_DIR=release

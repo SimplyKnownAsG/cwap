@@ -110,5 +110,45 @@ public:
         REQUIRE(param->cwap_type == proj.types().at("float"));
     }
 }
-// TODO: private methods, attributes
+
+TEST_CASE("attributes", "[classes]") {
+    cwap::Project proj("TestClasses");
+    REQUIRE(0 == proj.types().size());
+
+    TempFile temp_file;
+    temp_file << R"SOURCE(
+class A {
+public:
+    int available_to_all;
+protected:
+    int available_to_children;
+private:
+    int hidden;
+};
+)SOURCE";
+
+    temp_file.close();
+    proj.parse(temp_file.name);
+    cwap::Type* a_type = proj.types().at("A");
+
+    SECTION("public attribute") {
+        cwap::Attribute* attr = a_type->attributes().at("available_to_all");
+        REQUIRE(attr->name == "available_to_all");
+        REQUIRE(attr->cwap_type == proj.types().at("int"));
+    }
+    /* SECTION("second overload with int parameter") { */
+    /*     cwap::Function* func = a_type->methods()[1]; */
+    /*     REQUIRE(func->parameters().size() == 1); */
+    /*     cwap::Parameter* param = func->parameters()[0]; */
+    /*     REQUIRE(param->name == "param1"); */
+    /*     REQUIRE(param->cwap_type == proj.types().at("int")); */
+    /* } */
+    /* SECTION("third overload with float parameter") { */
+    /*     cwap::Function* func = a_type->methods()[2]; */
+    /*     REQUIRE(func->parameters().size() == 1); */
+    /*     cwap::Parameter* param = func->parameters()[0]; */
+    /*     REQUIRE(param->name == "floaty"); */
+    /*     REQUIRE(param->cwap_type == proj.types().at("float")); */
+    /* } */
+}
 // TODO: protected methods, attributes
