@@ -3,5 +3,5 @@
 
 namespace cwap {
 
-    template class TypeUsage<Variable, Namespace>;
+    template class TypeUsage<Variable>;
 }

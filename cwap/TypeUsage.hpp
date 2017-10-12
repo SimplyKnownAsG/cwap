@@ -8,14 +8,12 @@
 
 namespace cwap {
 
-    template<class TConcrete, class TParent>
+    template<class TConcrete>
     class TypeUsage {
     public:
         const std::string name;
 
         Type* cwap_type;
-
-        const TParent* parent;
 
         void dump_yaml(std::ostream& stream) const {
             stream << "{" << std::endl;
@@ -25,14 +23,13 @@ namespace cwap {
         }
 
     protected:
-        static TConcrete* Factory(CXCursor& cursor, Type* type, TParent* parent) {
-            TConcrete* variable = new TConcrete(get_name(cursor), type, parent);
+        static TConcrete* Factory(const CXCursor& cursor, Type* type) {
+            TConcrete* variable = new TConcrete(get_name(cursor), type);
             return variable;
         };
 
-        TypeUsage(std::string name, Type* cwap_type, TParent* parent)
+        TypeUsage(std::string name, Type* cwap_type)
           : name(name)
-          , cwap_type(cwap_type)
-          , parent(parent){};
+          , cwap_type(cwap_type){};
     };
 }

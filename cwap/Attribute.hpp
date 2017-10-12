@@ -4,10 +4,11 @@
 
 namespace cwap {
 
-    class Attribute : public TypeUsage<Attribute, Type> {
+    class Attribute : public TypeUsage<Attribute> {
         friend class Type;
-        using TypeUsage<Attribute, Type>::TypeUsage;
+        using TypeUsage<Attribute>::TypeUsage;
     };
 
-    extern template class TypeUsage<Attribute, Type>;
+    // force it to be compiled in cpp file
+    extern template class TypeUsage<Attribute>;
 }

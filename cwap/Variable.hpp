@@ -4,10 +4,10 @@
 
 namespace cwap {
 
-    class Variable : public TypeUsage<Variable, Namespace> {
+    class Variable : public TypeUsage<Variable> {
         friend class Namespace;
-        using TypeUsage<Variable, Namespace>::TypeUsage;
+        using TypeUsage<Variable>::TypeUsage;
     };
 
-    extern template class TypeUsage<Variable, Namespace>;
+    extern template class TypeUsage<Variable>;
 }

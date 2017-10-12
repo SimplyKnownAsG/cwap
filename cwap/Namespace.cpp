@@ -26,12 +26,12 @@ namespace cwap {
         }
         switch (cursor.kind) {
         case CXCursor_VarDecl: {
-            Variable* cv = Variable::Factory(cursor, this->get_type(cursor), this);
+            Variable* cv = Variable::Factory(cursor, this->get_type(cursor));
             this->_variables[cv->name] = cv;
             break;
         }
         case CXCursor_FunctionDecl: {
-            Function* cf = Function::Factory(cursor, this);
+            Function* cf = Clanger::create_function(cursor, this);
             if (cf != NULL) {
                 this->_functions.push_back(cf);
             }

@@ -1,45 +1,35 @@
 #pragma once
 
-#include "cwap/Parameter.hpp"
-#include "cwap/Type.hpp"
-
-#include <clang-c/Index.h>
-
+#include <ostream>
 #include <string>
 #include <vector>
 
 namespace cwap {
-
-    class Namespace;
+    class Parameter;
+    class Type;
 
     class Function {
-    private:
-        friend class Namespace;
-        friend class Type;
-
-        std::vector<Parameter*> _parameters;
-
-        Function(std::string name,
-                 std::string usr,
-                 const Namespace* space,
-                 const Type* bound_parent);
-
-        static Function* Factory(CXCursor& cursor, Namespace* space, Type* parent);
-
-        static Function* Factory(CXCursor& cursor, Namespace* space);
 
     public:
+        Function(const Type* return_type, std::string name, std::string usr)
+          : return_type(return_type)
+          , name(name)
+          , usr(usr){};
+
+        const Type* return_type;
+
         const std::string name;
 
         const std::string usr;
 
-        const Namespace* space;
+    private:
+        friend class Clanger;
+        std::vector<Parameter*> _parameters;
 
-        const Type* bound_parent;
-
-        const Type* return_type;
-
-        const std::vector<Parameter*> parameters() const;
+    public:
+        const std::vector<Parameter*> parameters() const {
+            return this->_parameters;
+        };
 
         void dump_yaml(std::ostream& stream) const;
     };

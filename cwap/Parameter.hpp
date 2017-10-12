@@ -6,10 +6,10 @@ namespace cwap {
 
     class Function;
 
-    class Parameter : public TypeUsage<Parameter, Function> {
-        friend class Function;
-        using TypeUsage<Parameter, Function>::TypeUsage;
+    class Parameter : public TypeUsage<Parameter> {
+        friend class Clanger;
+        using TypeUsage<Parameter>::TypeUsage;
     };
 
-    extern template class TypeUsage<Parameter, Function>;
+    extern template class TypeUsage<Parameter>;
 }

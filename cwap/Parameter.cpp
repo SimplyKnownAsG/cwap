@@ -2,5 +2,5 @@
 
 namespace cwap {
 
-    template class TypeUsage<Parameter, Function>;
+    template class TypeUsage<Parameter>;
 }

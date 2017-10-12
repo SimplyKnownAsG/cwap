@@ -45,12 +45,12 @@ namespace cwap {
         switch (cursor.kind) {
 
         case CXCursor_FieldDecl: {
-            Attribute* cv = Attribute::Factory(cursor, this, this);
+            Attribute* cv = Attribute::Factory(cursor, this);
             this->_attributes[cv->name] = cv;
             break;
         }
         case CXCursor_CXXMethod: {
-            Function* cf = Function::Factory(cursor, const_cast<Namespace*>(this->space), this);
+            Function* cf = Clanger::create_function(cursor, const_cast<Namespace*>(this->space));
             if (cf != NULL) {
                 this->_methods.push_back(cf);
             }

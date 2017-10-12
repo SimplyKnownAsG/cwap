@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cwap/ClangVisitor.hpp"
+#include "cwap/Function.hpp"
 
 #include <clang-c/Index.h>
 
@@ -13,7 +14,6 @@ namespace cwap {
     class Namespace;
     class Type;
     class Attribute;
-    class Function;
 
     class Type : protected ClangVisitor {
     private:
