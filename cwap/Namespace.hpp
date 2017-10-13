@@ -27,13 +27,9 @@ namespace cwap {
         std::unordered_map<std::string, Namespace*> _namespaces;
 
     protected:
-        Project* project;
-
-        CXChildVisitResult visit(CXCursor& cursor, CXCursor& parent) override;
+        CXChildVisitResult visit(CXCursor& cursor, Project& project) override;
 
         Namespace(const std::string name);
-
-        Namespace(const std::string name, Project* project);
 
     public:
         ~Namespace() = default;
@@ -44,6 +40,8 @@ namespace cwap {
 
         Type* get_type(CXType& clang_type);
 
+        Namespace* get_namespace(std::string name);
+
         const std::unordered_map<std::string, Type*> types() const;
 
         const std::unordered_map<std::string, Variable*> variables() const;
@@ -53,5 +51,7 @@ namespace cwap {
         const std::unordered_map<std::string, Namespace*> namespaces() const;
 
         void dump_yaml(std::ostream& stream);
+
+        bool has_function(std::string usr) const;
     };
 }

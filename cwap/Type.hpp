@@ -11,7 +11,7 @@
 
 namespace cwap {
 
-    class Namespace;
+    class Project;
     class Type;
     class Attribute;
 
@@ -28,10 +28,6 @@ namespace cwap {
 
         const std::string name;
 
-        Namespace const* space;
-
-        Type const* parent;
-
         const bool is_basic;
 
         const bool is_struct;
@@ -46,20 +42,20 @@ namespace cwap {
 
         void dump_yaml(std::ostream& stream) const;
 
+        bool has_function(std::string usr) const;
+
+        const std::string get_namespace_name() const;
+
     private:
         friend class Namespace;
 
-        Type(std::string name,
-             Namespace const* space,
-             bool is_basic,
-             bool is_struct,
-             bool is_class);
+        Type(std::string name, bool is_basic, bool is_struct, bool is_class);
 
-        static Type* Factory(CXType& cursor, Namespace const* space);
+        static Type* Factory(CXType& cursor);
 
-        static Type* Factory(CXCursor& cursor, Namespace const* space);
+        static Type* Factory(CXCursor& cursor);
 
-        CXChildVisitResult visit(CXCursor& cursor, CXCursor& parent) override;
+        CXChildVisitResult visit(CXCursor& cursor, Project& project) override;
 
         friend std::ostream& operator<<(std::ostream& stream, const Type& self);
     };

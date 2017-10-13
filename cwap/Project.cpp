@@ -43,9 +43,7 @@ namespace cwap {
 #endif
 
     Project::Project(std::string name)
-      : Namespace(name) {
-        this->project = this;
-    }
+      : Namespace(name) {}
 
     void Project::parse(std::string filename) {
         std::vector<std::string> empty;
@@ -85,7 +83,10 @@ namespace cwap {
         }
 
         CXCursor cursor = clang_getTranslationUnitCursor(tu);
-        clang_visitChildren(cursor, Project::VisitChildrenCallback, this);
+        struct ClangVisitorData wrapper {
+            this, *this
+        };
+        clang_visitChildren(cursor, Project::VisitChildrenCallback, &wrapper);
 
         clang_disposeTranslationUnit(tu);
         clang_disposeIndex(index);

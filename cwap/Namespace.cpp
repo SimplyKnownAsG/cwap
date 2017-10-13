@@ -10,14 +10,9 @@ namespace cwap {
     Namespace::Namespace(std::string name)
       : name(name) {}
 
-    Namespace::Namespace(std::string name, Project* project)
-      : name(name) {
-        this->project = project;
-    }
-
-    CXChildVisitResult Namespace::visit(CXCursor& cursor, CXCursor& parent) {
+    CXChildVisitResult Namespace::visit(CXCursor& cursor, Project& project) {
         Location location = Location::Create(cursor);
-        if (location.file_name != this->project->filename) {
+        if (location.file_name != project.filename) {
             return CXChildVisit_Continue;
         }
         CXCursorKind cursor_kind = clang_getCursorKind(cursor);
@@ -26,12 +21,12 @@ namespace cwap {
         }
         switch (cursor.kind) {
         case CXCursor_VarDecl: {
-            Variable* cv = Variable::Factory(cursor, this->get_type(cursor));
+            Variable* cv = Variable::Factory(cursor, project.get_type(cursor));
             this->_variables[cv->name] = cv;
             break;
         }
         case CXCursor_FunctionDecl: {
-            Function* cf = Clanger::create_function(cursor, this);
+            Function* cf = Clanger::create_function(cursor, project);
             if (cf != NULL) {
                 this->_functions.push_back(cf);
             }
@@ -39,10 +34,13 @@ namespace cwap {
         }
         case CXCursor_ClassDecl:
         case CXCursor_StructDecl: {
-            Type* type = Type::Factory(cursor, this);
+            Type* type = Type::Factory(cursor);
             this->_types[type->name] = type;
             // recursive
-            clang_visitChildren(cursor, Namespace::VisitChildrenCallback, type);
+            struct ClangVisitorData type_wrapper {
+                type, project
+            };
+            clang_visitChildren(cursor, Namespace::VisitChildrenCallback, &type_wrapper);
             break;
         }
         case CXCursor_Namespace: {
@@ -51,11 +49,14 @@ namespace cwap {
             if (this->_namespaces.count(space_name)) {
                 sub_space = this->_namespaces.at(space_name);
             } else {
-                sub_space = new Namespace(space_name, this->project);
+                sub_space = new Namespace(space_name);
                 this->_namespaces[space_name] = sub_space;
             }
             // recursive!
-            clang_visitChildren(cursor, Type::VisitChildrenCallback, sub_space);
+            struct ClangVisitorData type_wrapper {
+                sub_space, project
+            };
+            clang_visitChildren(cursor, Type::VisitChildrenCallback, &type_wrapper);
             break;
         }
         default: {
@@ -71,21 +72,40 @@ namespace cwap {
         return CXChildVisit_Continue;
     }
 
+    // TODO: this should only ever be called on a Project instance
     Type* Namespace::get_type(CXCursor& cursor) {
         CXType clang_type = clang_getCursorType(cursor);
         return this->get_type(clang_type);
     }
 
+    // TODO: this should only ever be called on a Project instance
     Type* Namespace::get_type(CXType& clang_type) {
-        Type* ct = Type::Factory(clang_type, this);
-        if (this->_types.count(ct->name)) {
+        Type* ct = Type::Factory(clang_type);
+        Namespace* space = this->get_namespace(ct->get_namespace_name());
+        if (space->_types.count(ct->name)) {
             auto temp = ct;
-            ct = this->_types[ct->name];
+            ct = space->_types[ct->name];
             delete temp;
         } else {
-            this->_types[ct->name] = ct;
+            space->_types[ct->name] = ct;
         }
         return ct;
+    }
+
+    // TODO: this can be made faster where a::b::c can be short circuited
+    Namespace* Namespace::get_namespace(std::string name) {
+        if (name == "")
+            return this;
+        for (auto name_space : this->_namespaces) {
+            if (name_space.first == name) {
+                return name_space.second;
+            }
+            if (Namespace* child_space = name_space.second->get_namespace(name)) {
+                return child_space;
+            }
+        }
+        Namespace* result = this->_namespaces[name] = new Namespace(name);
+        return result;
     }
 
     const std::unordered_map<std::string, Type*> Namespace::types() const {
@@ -137,5 +157,24 @@ namespace cwap {
         stream << "]," << std::endl;
 
         stream << "}" << std::endl;
+    }
+
+    bool Namespace::has_function(std::string usr) const {
+        for (auto func : this->_functions) {
+            if (func->usr == usr) {
+                return true;
+            }
+        }
+        for (auto name_space : this->_namespaces) {
+            if (name_space.second->has_function(usr)) {
+                return true;
+            }
+        }
+        for (auto name_type : this->_types) {
+            if (name_type.second->has_function(usr)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
