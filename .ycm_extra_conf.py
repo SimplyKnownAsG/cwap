@@ -20,7 +20,8 @@ if False:
     # LIB$(PROJECT)=$(BIN_DIR)/lib$(PROJECT).lib
     # PY_EXT=$(BIN_DIR)/_$(PROJECT).pyd
 else:
-    CXXFLAGS= '-fPIC -Wall -std=c++1y'.split() + CLANG_CXX_FLAGS + '-Wno-covered-switch-default -I/usr/include/python2.7 -I./ -c'.split()
+    CXXFLAGS= '-fPIC -Wall -std=c++1y'.split() + CLANG_CXX_FLAGS +\
+            '-Wno-covered-switch-default -I/usr/include/python2.7 -I./src/ -I./.dependencies/ -c'.split()
     LDFLAGS= '-fPIC'.split() + CLANG_LD_FLAGS
     LDSHARED = '-Wall -shared -o'.split() + LDFLAGS
 

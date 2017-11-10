@@ -15,9 +15,11 @@ release/
 debug/
 cwap.py
 *_wrap*
-cwap/cwap.hpp
-cwap/Version.cpp
-catch.hpp
+cwap.hpp
+Version.cpp
+
+# dependencies
+.dependencies/
 
 # Compiled files
 *.so
