@@ -136,20 +136,14 @@ private:
         REQUIRE(attr->name == "available_to_all");
         REQUIRE(attr->cwap_type == proj.types().at("int"));
     }
-    /* SECTION("second overload with int parameter") { */
-    /*     cwap::Function* func = a_type->methods()[1]; */
-    /*     REQUIRE(func->parameters().size() == 1); */
-    /*     cwap::Parameter* param = func->parameters()[0]; */
-    /*     REQUIRE(param->name == "param1"); */
-    /*     REQUIRE(param->cwap_type == proj.types().at("int")); */
-    /* } */
-    /* SECTION("third overload with float parameter") { */
-    /*     cwap::Function* func = a_type->methods()[2]; */
-    /*     REQUIRE(func->parameters().size() == 1); */
-    /*     cwap::Parameter* param = func->parameters()[0]; */
-    /*     REQUIRE(param->name == "floaty"); */
-    /*     REQUIRE(param->cwap_type == proj.types().at("float")); */
-    /* } */
+    SECTION("second overload with int parameter") {
+        cwap::Attribute* attr = a_type->attributes().at("available_to_children");
+        REQUIRE(attr->name == "available_to_children");
+        REQUIRE(attr->cwap_type == proj.types().at("int"));
+    }
+    SECTION("third overload with float parameter") {
+        REQUIRE_THROWS(a_type->attributes().at("hidden"));
+    }
 }
 
 TEST_CASE("nested classses", "[classes]") {
@@ -164,6 +158,7 @@ public:
 };
 
 class BB {
+public:
     int a; // trap to make sure int is not a type of BB
 };
 )SOURCE";

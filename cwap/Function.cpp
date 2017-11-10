@@ -10,10 +10,13 @@ namespace cwap {
         stream << "return_type: '" << this->return_type->name << "'," << std::endl;
 
         stream << "parameters: [" << std::endl;
-        for (auto param : this->parameters()) {
-            /* param->dump_yaml(stream); */
-            stream << "," << std::endl;
+        for (auto param = this->parameters().begin(), e = this->parameters().end(); param != e;
+             param++) {
+            (*param)->dump_yaml(stream);
+            if (param != e) {
+                stream << "," << std::endl;
+            }
         }
-        stream << "}" << std::endl;
+        stream << "]" << std::endl;
     }
 }

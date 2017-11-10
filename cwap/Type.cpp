@@ -68,6 +68,16 @@ namespace cwap {
             return CXChildVisit_Continue;
         }
 
+        switch (clang_getCXXAccessSpecifier(cursor)) {
+        case CX_CXXInvalidAccessSpecifier:
+        case CX_CXXPrivate:
+            return CXChildVisit_Continue;
+        case CX_CXXProtected:
+        case CX_CXXPublic:
+            // do nothing;
+            break;
+        }
+
         switch (cursor.kind) {
         case CXCursor_FieldDecl: {
             Type* attr_type = project.get_type(cursor);
@@ -94,11 +104,11 @@ namespace cwap {
             break;
         }
         default: {
-            CXString cursor_kind_name = clang_getCursorKindSpelling(cursor.kind);
-            std::cerr << "I do not know how to interpret declaration of "
-                      << clang_getCString(cursor_kind_name) << " (" << cursor.kind << ")"
-                      << std::endl;
-            clang_disposeString(cursor_kind_name);
+            /* CXString cursor_kind_name = clang_getCursorKindSpelling(cursor.kind); */
+            /* std::cerr << "I do not know how to interpret declaration of " */
+            /*           << clang_getCString(cursor_kind_name) << " (" << cursor.kind << ")" */
+            /*           << std::endl; */
+            /* clang_disposeString(cursor_kind_name); */
             break;
         }
         }

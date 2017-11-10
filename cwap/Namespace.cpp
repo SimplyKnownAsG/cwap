@@ -12,7 +12,7 @@ namespace cwap {
 
     CXChildVisitResult Namespace::visit(CXCursor& cursor, Project& project) {
         Location location = Location::Create(cursor);
-        if (location.file_name != project.filename) {
+        if (!project.sources().count(location.file_name)) {
             return CXChildVisit_Continue;
         }
         CXCursorKind cursor_kind = clang_getCursorKind(cursor);
@@ -60,11 +60,11 @@ namespace cwap {
             break;
         }
         default: {
-            CXString cursor_kind_name = clang_getCursorKindSpelling(cursor.kind);
-            std::cerr << "I do not know how to interpret declaration of "
-                      << clang_getCString(cursor_kind_name) << " (" << cursor.kind << ")"
-                      << std::endl;
-            clang_disposeString(cursor_kind_name);
+            /* CXString cursor_kind_name = clang_getCursorKindSpelling(cursor.kind); */
+            /* std::cerr << "I do not know how to interpret declaration of " */
+            /*           << clang_getCString(cursor_kind_name) << " (" << cursor.kind << ")" */
+            /*           << std::endl; */
+            /* clang_disposeString(cursor_kind_name); */
             break;
         }
         }
