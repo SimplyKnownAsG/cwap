@@ -1,4 +1,4 @@
-#include "tests/cpp/TempFile.hpp"
+#include "TempFile.hpp"
 
 #include "cwap/cwap.hpp"
 
@@ -22,7 +22,7 @@ namespace b {
         REQUIRE(1 == proj.types().size());
 
         cwap::Namespace* space = proj.namespaces().at("b");
-        REQUIRE(1 == space->types().size());
+        REQUIRE(0 == space->types().size());
         REQUIRE("a" == space->variables().at("a")->name);
     }
     SECTION("namespace declared twice") {
@@ -37,12 +37,12 @@ namespace a {
         temp_file.close();
         proj.parse(temp_file.name);
 
-        REQUIRE(0 == proj.types().size());
+        REQUIRE(1 == proj.types().size());
         REQUIRE(1 == proj.namespaces().size());
         REQUIRE(0 == proj.variables().size());
 
         cwap::Namespace* space = proj.namespaces().at("a");
-        REQUIRE(1 == space->types().size());
+        REQUIRE(0 == space->types().size());
         REQUIRE(2 == space->variables().size());
         REQUIRE("b" == space->variables().at("b")->name);
         REQUIRE("c" == space->variables().at("c")->name);
@@ -74,6 +74,71 @@ namespace b {
         cwap::Type* b_A = space_b->types().at("b::A");
         REQUIRE(proj_A != a_A);
         REQUIRE(a_A != b_A);
+    }
+}
+
+TEST_CASE("std namespace", "[namespaces]") {
+    cwap::Project proj("TestFunctions");
+    REQUIRE(0 == proj.types().size());
+    TempFile temp_file;
+
+    SECTION("std namespace being read does not add to project") {
+        temp_file << R"SOURCE(
+#include <string>
+int a;
+)SOURCE";
+        temp_file.close();
+        proj.parse(temp_file.name);
+
+        REQUIRE(1 == proj.types().size());
+        REQUIRE(0 == proj.namespaces().size());
+    }
+    SECTION("using std namespace does not add to project") {
+        temp_file << R"SOURCE(
+#include <string>
+using namespace std;
+int a;
+)SOURCE";
+        temp_file.close();
+        proj.parse(temp_file.name);
+
+        REQUIRE(1 == proj.types().size());
+        REQUIRE(0 == proj.namespaces().size());
+    }
+    SECTION("public use of std namespace adds it to project") {
+        temp_file << R"SOURCE(
+#include <string>
+using namespace std;
+int a;
+string b;
+)SOURCE";
+        temp_file.close();
+        proj.parse(temp_file.name);
+
+        std::cout << *proj.variables().at("b")->cwap_type << std::endl;
+
+        REQUIRE(1 == proj.namespaces().size());
+        REQUIRE(1 == proj.types().size());
+        auto std_space = proj.namespaces().at("std");
+        REQUIRE(1 == std_space->types().size());
+        REQUIRE(1 == std_space->types().count("std::string"));
+    }
+    SECTION("public use of std::string adds std to project") {
+        temp_file << R"SOURCE(
+#include <string>
+int a;
+std::string b;
+)SOURCE";
+        temp_file.close();
+        proj.parse(temp_file.name);
+
+        std::cout << *proj.variables().at("b")->cwap_type << std::endl;
+
+        REQUIRE(1 == proj.namespaces().size());
+        REQUIRE(1 == proj.types().size());
+        auto std_space = proj.namespaces().at("std");
+        REQUIRE(1 == std_space->types().size());
+        REQUIRE(1 == std_space->types().count("std::string"));
     }
 }
 // TODO: namespace alias

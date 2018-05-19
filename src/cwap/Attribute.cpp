@@ -2,5 +2,5 @@
 
 namespace cwap {
 
-    template class TypeUsage<Attribute, Type>;
+    template class TypeUsage<Attribute>;
 }

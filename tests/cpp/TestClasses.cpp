@@ -1,4 +1,4 @@
-#include "tests/cpp/TempFile.hpp"
+#include "TempFile.hpp"
 
 #include "cwap/cwap.hpp"
 
@@ -110,5 +110,71 @@ public:
         REQUIRE(param->cwap_type == proj.types().at("float"));
     }
 }
-// TODO: private methods, attributes
+
+TEST_CASE("attributes", "[classes]") {
+    cwap::Project proj("TestClasses");
+    REQUIRE(0 == proj.types().size());
+
+    TempFile temp_file;
+    temp_file << R"SOURCE(
+class A {
+public:
+    int available_to_all;
+protected:
+    int available_to_children;
+private:
+    int hidden;
+};
+)SOURCE";
+
+    temp_file.close();
+    proj.parse(temp_file.name);
+    cwap::Type* a_type = proj.types().at("A");
+
+    SECTION("public attribute") {
+        cwap::Attribute* attr = a_type->attributes().at("available_to_all");
+        REQUIRE(attr->name == "available_to_all");
+        REQUIRE(attr->cwap_type == proj.types().at("int"));
+    }
+    SECTION("second overload with int parameter") {
+        cwap::Attribute* attr = a_type->attributes().at("available_to_children");
+        REQUIRE(attr->name == "available_to_children");
+        REQUIRE(attr->cwap_type == proj.types().at("int"));
+    }
+    SECTION("third overload with float parameter") {
+        REQUIRE_THROWS(a_type->attributes().at("hidden"));
+    }
+}
+
+TEST_CASE("nested classses", "[classes]") {
+    cwap::Project proj("TestClasses");
+    REQUIRE(0 == proj.types().size());
+
+    TempFile temp_file;
+    temp_file << R"SOURCE(
+class AA {
+public:
+    class AB {};
+};
+
+class BB {
+public:
+    int a; // trap to make sure int is not a type of BB
+};
+)SOURCE";
+
+    temp_file.close();
+    proj.parse(temp_file.name);
+
+    SECTION("has nested") {
+        cwap::Type* aa_type = proj.types().at("AA");
+        REQUIRE(aa_type->types().size() == 1);
+    }
+    SECTION("no nested, and int is not a nested class") {
+        cwap::Type* bb_type = proj.types().at("BB");
+        REQUIRE(bb_type->types().size() == 0);
+        REQUIRE(proj.types().count("int") == 1);
+        REQUIRE(bb_type->types().count("int") == 0);
+    }
+}
 // TODO: protected methods, attributes

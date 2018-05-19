@@ -1,6 +1,6 @@
-#include "tests/cpp/TempFile.hpp"
+#include "TempFile.hpp"
 
-#include "cwap/cwap.hpp"
+#include "cwap/Project.hpp"
 
 #include "catch.hpp"
 
