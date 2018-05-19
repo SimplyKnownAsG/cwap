@@ -4,51 +4,11 @@
 .vscode
 *.orig
 tags
+compile_commands.json
+build/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Generated files
-release/
-debug/
-cwap.py
-*_wrap*
-cwap.hpp
-Version.cpp
-
-# dependencies
-.dependencies/
-
-# Compiled files
-*.so
-*.pyd
-*.obj
-*.exp
-*.lib
-*.exe
-
-googletest/
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*,cover
-.hypothesis/
-
-# Translations
-*.mo
-*.pot
-
-# PyBuilder
-target/
-
-#Ipython Notebook
-.ipynb_checkpoints
 
