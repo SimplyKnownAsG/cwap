@@ -9,38 +9,7 @@
 #include <string>
 #include <vector>
 
-#ifndef _WIN32
-#include <execinfo.h>
-#include <ucontext.h>
-#include <unistd.h>
-#endif
-
 namespace cwap {
-
-#ifndef _WIN32
-    void handler(int sig) {
-        void* array[10];
-        size_t size;
-        // get void*'s for all entries on the stack
-        size = backtrace(array, 10);
-
-        // print out all the frames to stderr
-        std::cerr << "Error: signal " << sig << std::endl;
-        backtrace_symbols_fd(array, size, STDERR_FILENO);
-        exit(1);
-    }
-
-    int install_handler() {
-        /* Install our signal handler */
-
-        signal(SIGSEGV, handler);
-        signal(SIGUSR1, handler);
-
-        return 1;
-    }
-
-    static int installed_handler = install_handler();
-#endif
 
     Project::Project(std::string name)
       : Namespace(name) {}
@@ -56,11 +25,6 @@ namespace cwap {
     }
 
     void Project::parse(std::vector<std::string> filenames, std::vector<std::string> clang_args) {
-#ifndef _WIN32
-        if (installed_handler != 1) {
-            installed_handler = install_handler();
-        }
-#endif
         auto num_args = clang_args.size();
 
         CXIndex index = clang_createIndex(1, 1);
