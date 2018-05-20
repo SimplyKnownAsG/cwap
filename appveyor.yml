@@ -1,0 +1,36 @@
+version: '{build}'
+
+configuration:
+  - Release
+
+before_build:
+  cmd: |
+    choco install ninja
+    where clang-cl
+    clang-cl /?
+    set CMAKE_OPTS=%CMAKE_OPTS% -DLLVM_INCLUDE_DIRS="C:/Program Files/LLVM/include"
+    set CMAKE_OPTS=%CMAKE_OPTS% -DLLVM_LIBRARY_DIRS="C:/Program Files/LLVM/lib"
+    set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_C_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe"
+    set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_CXX_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe"
+    set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_CXX_COMPILE_FEATURES="cxx_range_for;cxx_auto_type;cxx_rvalue_references"
+    set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_CXX_FLAGS="/TP /GX"
+    set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_SYSTEM_NAME="Generic"
+    cmake -Bbuild -H. -G Ninja %CMAKE_OPTS%
+
+# choco install ninja
+# dir "C:\Program Files\LLVM\bin\*.exe"
+# set CMAKE_OPTS=%CMAKE_OPTS% -DLLVM_INCLUDE_DIRS="C:/Program Files/LLVM/include"
+# set CMAKE_OPTS=%CMAKE_OPTS% -DLLVM_LIBRARY_DIRS="C:/Program Files/LLVM/lib"
+# set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_C_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe"
+# set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_C_LINKER="C:/Program Files/LLVM/bin/lld-link.exe"
+# set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_CXX_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe"
+# set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_CXX_COMPILE_FEATURES="cxx_range_for;cxx_auto_type;cxx_rvalue_references"
+# set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_CXX_FLAGS="-std=c++1y"
+# set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_CXX_LINKER="C:/Program Files/LLVM/bin/lld-link.exe"
+# set CMAKE_OPTS=%CMAKE_OPTS% -DCMAKE_SYSTEM_NAME="Generic"
+# cmake -Bbuild -H. -G Ninja %CMAKE_OPTS%
+
+build_script:
+  cmd: |
+    cmake --build build
+

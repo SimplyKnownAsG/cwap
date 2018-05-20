@@ -15,6 +15,7 @@ target_include_directories(run_tests
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cpp
                 ${CMAKE_BINARY_DIR}/3rd-party/catch)
 
+
 # the ctest thing is far too complicated...
 add_custom_command(
         TARGET run_tests

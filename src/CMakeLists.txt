@@ -2,16 +2,24 @@
 file(GLOB_RECURSE CWAP_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
-execute_process(COMMAND llvm-config --cxxflags
-        OUTPUT_VARIABLE LLVM_COMPILE_FLAGS
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(COMMAND llvm-config --ldflags
-        OUTPUT_VARIABLE LLVM_LINK_FLAGS
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
+find_package(LLVM)
+if (NOT DEFINED LLVM_INCLUDE_DIRS)
+        message(WARNING "Missing LLVM_INCLUDE_DIRS, will likely fail")
+endif()
+if (NOT DEFINED LLVM_LIBRARY_DIRS)
+        message(WARNING "Missing LLVM_LIBRARY_DIRS, will likely fail")
+endif()
 
 add_library(cwap STATIC ${CWAP_SOURCES})
-target_compile_features(cwap PRIVATE cxx_range_for cxx_auto_type)
-target_include_directories(cwap PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(cwap PUBLIC globpp ${LLVM_LINK_FLAGS} clang)
-target_compile_options(cwap PUBLIC ${LLVM_COMPILE_FLAGS})
+
+target_compile_features(cwap
+        PRIVATE cxx_range_for cxx_auto_type)
+
+target_include_directories(cwap
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+               ${LLVM_INCLUDE_DIRS})
+
+target_link_libraries(cwap
+        PUBLIC globpp
+               "-L${LLVM_LIBRARY_DIRS}" clang)
 

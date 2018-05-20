@@ -5,6 +5,8 @@
 #include "cwap/Namespace.hpp"
 #include "cwap/Project.hpp"
 
+#include <algorithm>
+
 namespace cwap {
 
     Type::Type(std::string name, bool is_basic, bool is_struct, bool is_class)

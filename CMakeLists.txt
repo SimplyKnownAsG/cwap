@@ -6,11 +6,8 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
 project(cwap)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# we have to use clang...
-set(CMAKE_C_COMPILER clang)
-set(CMAKE_CXX_COMPILER clang++)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rd-party)
