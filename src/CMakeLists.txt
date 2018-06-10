@@ -21,5 +21,10 @@ target_include_directories(cwap
 
 target_link_libraries(cwap
         PUBLIC globpp
+               yaml-cpp
                "-L${LLVM_LIBRARY_DIRS}" clang)
 
+set_target_properties(cwap PROPERTIES
+        RESOURCE "${CWAP_RESOURCES}")
+
+message("Found these resources ${CWAP_RESOURCES}")
