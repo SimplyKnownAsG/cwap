@@ -7,26 +7,31 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
+
+using std::string;
 
 namespace cwap {
 
     class Project;
     class Type;
-    class Attribute;
+    class TypeUsage;
 
     class Type : protected ClangVisitor {
     private:
-        std::unordered_map<std::string, Type*> _types;
+        std::unordered_map<string, Type*> _types;
 
-        std::unordered_map<std::string, Attribute*> _attributes;
+        std::unordered_map<string, TypeUsage*> _attributes;
 
-        std::vector<Function*> _methods;
+        std::unordered_set<Function*> _methods;
 
     public:
         virtual ~Type() = default;
 
-        const std::string name;
+        const string usr;
+
+        const string name;
 
         const bool is_basic;
 
@@ -34,26 +39,23 @@ namespace cwap {
 
         const bool is_class;
 
-        const std::unordered_map<std::string, Type*> types() const;
+        const std::unordered_map<string, Type*> types() const;
 
-        const std::unordered_map<std::string, Attribute*> attributes() const;
+        const std::unordered_map<string, TypeUsage*> attributes() const;
 
-        const std::vector<Function*> methods() const;
+        std::vector<Function*> methods() const;
 
         void dump_yaml(std::ostream& stream) const;
 
-        bool has_function(std::string usr) const;
-
-        const std::string get_namespace_name() const;
-
     private:
+        friend class Project;
         friend class Namespace;
 
-        Type(std::string name, bool is_basic, bool is_struct, bool is_class);
+        Type(const string usr, const string name, bool is_basic, bool is_struct, bool is_class);
 
-        static Type* Factory(CXType& cursor);
+        /* static Type* Create(Project& project, const CXCursor& cursor); */
 
-        static Type* Factory(CXCursor& cursor);
+        static Type* Create(Project& project, const CXType& clang_type);
 
         CXChildVisitResult visit(CXCursor& cursor, Project& project) override;
 

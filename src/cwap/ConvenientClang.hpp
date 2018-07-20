@@ -6,14 +6,9 @@
 namespace cwap {
     std::string get_name(const CXCursor& cursor);
 
+    std::string get_type_name(const CXCursor& cursor);
+
     std::string get_usr(const CXCursor& cursor);
 
-    class Function;
-    class Project;
-    class Type;
-
-    class Clanger {
-    public:
-        static Function* create_function(const CXCursor& cursor, Project& project);
-    };
+    std::string get_usr(const CXType& type);
 }

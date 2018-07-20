@@ -43,6 +43,7 @@ TEST_CASE("functions", "[functions]") {
     SECTION("declaration and definition do not duplicate") {
         temp_file << R"SOURCE(
 int def_decl();
+
 int def_decl() {
     int a = 1;
     int b = 2;
@@ -64,7 +65,7 @@ int def_decl(int param2) {
         temp_file.close();
         proj.parse(temp_file.name);
 
-        cwap::Parameter* param = proj.functions()[0]->parameters()[0];
+        cwap::TypeUsage* param = proj.functions()[0]->parameters()[0];
         REQUIRE(param->name == "param1");
     }
 }
@@ -95,14 +96,14 @@ int overloaded(float floaty);
     SECTION("second overload with int parameter") {
         cwap::Function* func = proj.functions()[1];
         REQUIRE(func->parameters().size() == 1);
-        cwap::Parameter* param = func->parameters()[0];
+        cwap::TypeUsage* param = func->parameters()[0];
         REQUIRE(param->name == "param1");
         REQUIRE(param->cwap_type == proj.types().at("int"));
     }
     SECTION("third overload with float parameter") {
         cwap::Function* func = proj.functions()[2];
         REQUIRE(func->parameters().size() == 1);
-        cwap::Parameter* param = func->parameters()[0];
+        cwap::TypeUsage* param = func->parameters()[0];
         REQUIRE(param->name == "floaty");
         REQUIRE(param->cwap_type == proj.types().at("float"));
     }

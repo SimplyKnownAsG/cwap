@@ -4,8 +4,11 @@
 #include <string>
 #include <vector>
 
+#include <clang-c/Index.h>
+
 namespace cwap {
-    class Parameter;
+    class TypeUsage;
+    class Project;
     class Type;
 
     class Function {
@@ -16,6 +19,8 @@ namespace cwap {
           , name(name)
           , usr(usr){};
 
+        static Function* Create(Project& project, const CXCursor& cursor);
+
         const Type* return_type;
 
         const std::string name;
@@ -23,14 +28,15 @@ namespace cwap {
         const std::string usr;
 
     private:
-        friend class Clanger;
-        std::vector<Parameter*> _parameters;
+        std::vector<TypeUsage*> _parameters;
 
     public:
-        const std::vector<Parameter*> parameters() const {
+        const std::vector<TypeUsage*> parameters() const {
             return this->_parameters;
         };
 
         void dump_yaml(std::ostream& stream) const;
+
+        friend std::ostream& operator<<(std::ostream& stream, const Function& self);
     };
 }

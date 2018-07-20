@@ -4,6 +4,8 @@
 
 #include "catch.hpp"
 
+#include <algorithm>
+
 TEST_CASE("empty class and struct", "[classes]") {
     cwap::Project proj("TestClasses");
     REQUIRE(0 == proj.types().size());
@@ -49,18 +51,25 @@ public:
 
     temp_file.close();
     proj.parse(temp_file.name);
+    cwap::Type* a_type = proj.types().at("A");
+    auto meths = a_type->methods();
 
     SECTION("method returning int") {
-        cwap::Type* a_type = proj.types().at("A");
-        cwap::Function* int_method = a_type->methods()[0];
+        /* cwap::Function* int_method = a_type->methods()[0]; */
+        cwap::Function* int_method =
+                *std::find_if(meths.begin(), meths.end(), [](cwap::Function* m) {
+                    return m->name == "int_method";
+                });
         REQUIRE("int_method" == int_method->name);
         auto return_type = int_method->return_type;
         auto int_type = proj.types().at("int");
         REQUIRE(return_type == int_type);
     }
     SECTION("method returning float") {
-        cwap::Type* a_type = proj.types().at("A");
-        cwap::Function* float_method = a_type->methods()[1];
+        cwap::Function* float_method =
+                *std::find_if(meths.begin(), meths.end(), [](cwap::Function* m) {
+                    return m->name == "float_method";
+                });
         REQUIRE("float_method" == float_method->name);
         auto return_type = float_method->return_type;
         auto float_type = proj.types().at("float");
@@ -98,14 +107,14 @@ public:
     SECTION("second overload with int parameter") {
         cwap::Function* func = a_type->methods()[1];
         REQUIRE(func->parameters().size() == 1);
-        cwap::Parameter* param = func->parameters()[0];
+        cwap::TypeUsage* param = func->parameters()[0];
         REQUIRE(param->name == "param1");
         REQUIRE(param->cwap_type == proj.types().at("int"));
     }
     SECTION("third overload with float parameter") {
         cwap::Function* func = a_type->methods()[2];
         REQUIRE(func->parameters().size() == 1);
-        cwap::Parameter* param = func->parameters()[0];
+        cwap::TypeUsage* param = func->parameters()[0];
         REQUIRE(param->name == "floaty");
         REQUIRE(param->cwap_type == proj.types().at("float"));
     }
@@ -132,12 +141,12 @@ private:
     cwap::Type* a_type = proj.types().at("A");
 
     SECTION("public attribute") {
-        cwap::Attribute* attr = a_type->attributes().at("available_to_all");
+        cwap::TypeUsage* attr = a_type->attributes().at("available_to_all");
         REQUIRE(attr->name == "available_to_all");
         REQUIRE(attr->cwap_type == proj.types().at("int"));
     }
     SECTION("second overload with int parameter") {
-        cwap::Attribute* attr = a_type->attributes().at("available_to_children");
+        cwap::TypeUsage* attr = a_type->attributes().at("available_to_children");
         REQUIRE(attr->name == "available_to_children");
         REQUIRE(attr->cwap_type == proj.types().at("int"));
     }

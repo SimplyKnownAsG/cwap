@@ -1,35 +1,29 @@
 #pragma once
 
-#include "cwap/ConvenientClang.hpp"
-#include "cwap/Type.hpp"
-
 #include <ostream>
 #include <string>
 
-namespace cwap {
+#include <clang-c/Index.h>
 
-    template<class TConcrete>
+namespace cwap {
+    class Project;
+    class Type;
+
     class TypeUsage {
     public:
+        const std::string usr;
+
         const std::string name;
 
         Type* cwap_type;
 
-        void dump_yaml(std::ostream& stream) const {
-            stream << "{" << std::endl;
-            stream << "name: '" << this->name << "'," << std::endl;
-            stream << "type: '" << this->cwap_type->name << "'" << std::endl;
-            stream << "}" << std::endl;
-        }
+        void dump_yaml(std::ostream& stream) const;
 
-    protected:
-        static TConcrete* Factory(const CXCursor& cursor, Type* type) {
-            TConcrete* variable = new TConcrete(get_name(cursor), type);
-            return variable;
-        };
+        static TypeUsage* Create(Project& project, const CXCursor& cursor);
 
-        TypeUsage(std::string name, Type* cwap_type)
-          : name(name)
-          , cwap_type(cwap_type){};
+    private:
+        TypeUsage(std::string usr, std::string name, Type* cwap_type);
+
+        friend std::ostream& operator<<(std::ostream& stream, const TypeUsage& self);
     };
 }

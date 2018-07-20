@@ -19,8 +19,8 @@ target_include_directories(run_tests
 
 
 # the ctest thing is far too complicated...
-add_custom_command(
-        TARGET run_tests
-        POST_BUILD
-        COMMAND $<TARGET_FILE:run_tests>)
+# add_custom_command(
+#         TARGET run_tests
+#         POST_BUILD
+#         COMMAND $<TARGET_FILE:run_tests>)
 

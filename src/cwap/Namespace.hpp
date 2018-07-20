@@ -3,13 +3,14 @@
 #include "cwap/ClangVisitor.hpp"
 #include "cwap/Function.hpp"
 #include "cwap/Type.hpp"
-#include "cwap/Variable.hpp"
+#include "cwap/TypeUsage.hpp"
 
 #include <clang-c/Index.h>
 
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace cwap {
 
@@ -18,40 +19,40 @@ namespace cwap {
 
     class Namespace : protected ClangVisitor {
     private:
+        friend class Type;
+
         std::unordered_map<std::string, Type*> _types;
 
-        std::unordered_map<std::string, Variable*> _variables;
+        std::unordered_map<std::string, TypeUsage*> _variables;
 
-        std::vector<Function*> _functions;
+        std::unordered_set<Function*> _functions;
 
         std::unordered_map<std::string, Namespace*> _namespaces;
 
     protected:
         CXChildVisitResult visit(CXCursor& cursor, Project& project) override;
 
-        Namespace(const std::string name);
+        Namespace(const std::string usr, const std::string name);
+
+        static Namespace* Create(Project& project, const CXCursor& cursor);
 
     public:
         ~Namespace() = default;
 
+        const std::string usr;
+
         const std::string name;
-
-        Type* get_type(CXCursor& clang_type);
-
-        Type* get_type(CXType& clang_type);
-
-        Namespace* get_namespace(std::string name);
 
         const std::unordered_map<std::string, Type*> types() const;
 
-        const std::unordered_map<std::string, Variable*> variables() const;
+        const std::unordered_map<std::string, TypeUsage*> variables() const;
 
-        const std::vector<Function*> functions() const;
+        std::vector<Function*> functions() const;
 
         const std::unordered_map<std::string, Namespace*> namespaces() const;
 
         void dump_yaml(std::ostream& stream);
 
-        bool has_function(std::string usr) const;
+        friend std::ostream& operator<<(std::ostream& stream, const Namespace& self);
     };
 }

@@ -1,71 +1,67 @@
 #include "cwap/Type.hpp"
-#include "cwap/Attribute.hpp"
 #include "cwap/ConvenientClang.hpp"
 #include "cwap/Location.hpp"
 #include "cwap/Namespace.hpp"
 #include "cwap/Project.hpp"
+#include "cwap/TypeUsage.hpp"
 
 #include <algorithm>
 
 namespace cwap {
 
-    Type::Type(std::string name, bool is_basic, bool is_struct, bool is_class)
-      : name(name)
+    Type::Type(const string usr, const string name, bool is_basic, bool is_struct, bool is_class)
+      : usr(usr)
+      , name(name)
       , is_basic(is_basic)
       , is_struct(is_struct)
       , is_class(is_class){};
 
-    Type* Type::Factory(CXType& type) {
-        CXString type_spelling = clang_getTypeSpelling(type);
-        std::string type_name(clang_getCString(type_spelling));
+    /* Type* Type::Create(Project& project, const CXCursor& cursor) { */
+    /*     CXType clang_type = clang_getCursorType(cursor); */
+    /*     return Type::Create(project, clang_type); */
+    /* } */
 
-        CXType real_type = clang_getCanonicalType(type);
-
-        // try to figure out the namespace when "using namespace std" was used
-        if (real_type.kind != CXType_Invalid) {
-            CXString real_type_spelling = clang_getTypeSpelling(real_type);
-            std::string real_type_name(clang_getCString(real_type_spelling));
-
-            // private namespace "::__" is too far
-            size_t private_index = real_type_name.find("::__");
-            private_index += private_index == std::string::npos ? 0 : 2;
-
-            // anything in a template is also too far
-            size_t template_start = real_type_name.find("<");
-
-            std::string non_private_non_template =
-              real_type_name.substr(0, std::min(private_index, template_start));
-
-            size_t namespace_index = non_private_non_template.find("::");
-            if (namespace_index != std::string::npos) {
-                std::string space_name = non_private_non_template.substr(0, namespace_index + 2);
-
-                // TODO: this might fail for legitmate name::name:: (double namespace)
-                // Prevent prefixing namespace when it is already there
-                if (type_name.find(space_name) == std::string::npos) {
-                    type_name = space_name + type_name;
-                }
-            }
-            clang_disposeString(real_type_spelling);
+    Type* Type::Create(Project& project, const CXType& clang_type) {
+        if (clang_type.kind == CXType_Invalid) {
+            throw std::invalid_argument("Invalid cursor type.");
         }
 
-        clang_disposeString(type_spelling);
-        return new Type(
-          type_name, CXType_Void < type.kind && type.kind < CXType_NullPtr, false, false);
-    }
-
-    Type* Type::Factory(CXCursor& cursor) {
-        CXType clang_type = clang_getCursorType(cursor);
         CXString type_spelling = clang_getTypeSpelling(clang_type);
-        std::string type_name(clang_getCString(type_spelling));
+        string type_name(clang_getCString(type_spelling));
         clang_disposeString(type_spelling);
-        return new Type(
-          type_name, false, cursor.kind == CXCursor_StructDecl, cursor.kind == CXCursor_ClassDecl);
+
+        if (project.type_renames.count(type_name) == 1) {
+            type_name = project.type_renames.at(type_name);
+        }
+
+        CXCursor type_cursor = clang_getTypeDeclaration(clang_type);
+
+        auto result = new Type(get_usr(type_cursor),
+                               type_name,
+                               CXType_Void < clang_type.kind && clang_type.kind < CXType_NullPtr,
+                               type_cursor.kind == CXCursor_StructDecl,
+                               type_cursor.kind == CXCursor_ClassDecl);
+
+        const CXCursor& parent = clang_getCursorSemanticParent(type_cursor);
+
+        // XXX: maybe this should use clang_getCUrsorSemanticParent(cursor)
+        if ((parent.kind >= CXCursor_FirstInvalid && parent.kind <= CXCursor_LastInvalid) ||
+            parent.kind == CXCursor_TranslationUnit) {
+            std::string key = result->usr.empty() ? result->name : result->usr;
+
+            if (project._types.count(key) != 1) {
+                // XXX: so, this is deleted in Project::get
+                project._types[result->name] = result;
+            }
+        }
+
+        return result;
     }
 
     CXChildVisitResult Type::visit(CXCursor& cursor, Project& project) {
         Location location = Location::Create(cursor);
         CXCursorKind cursor_kind = clang_getCursorKind(cursor);
+
         if (!clang_isDeclaration(cursor_kind)) {
             return CXChildVisit_Continue;
         }
@@ -82,21 +78,18 @@ namespace cwap {
 
         switch (cursor.kind) {
         case CXCursor_FieldDecl: {
-            Type* attr_type = project.get_type(cursor);
-            Attribute* cv = Attribute::Factory(cursor, attr_type);
+            TypeUsage* cv = project.get<TypeUsage>(cursor);
             this->_attributes[cv->name] = cv;
             break;
         }
         case CXCursor_CXXMethod: {
-            Function* cf = Clanger::create_function(cursor, project);
-            if (cf != NULL) {
-                this->_methods.push_back(cf);
-            }
+            auto cf = project.get<Function>(cursor);
+            this->_methods.insert(cf);
             break;
         }
         case CXCursor_ClassDecl:
         case CXCursor_StructDecl: {
-            Type* type = Type::Factory(cursor);
+            Type* type = project.get(clang_getCursorType(cursor));
             this->_types[type->name] = type;
             // recursive
             struct ClangVisitorData type_wrapper {
@@ -118,20 +111,21 @@ namespace cwap {
         return CXChildVisit_Continue;
     }
 
-    const std::unordered_map<std::string, Type*> Type::types() const {
+    const std::unordered_map<string, Type*> Type::types() const {
         return this->_types;
     }
 
-    const std::unordered_map<std::string, Attribute*> Type::attributes() const {
+    const std::unordered_map<string, TypeUsage*> Type::attributes() const {
         return this->_attributes;
     }
 
-    const std::vector<Function*> Type::methods() const {
-        return this->_methods;
+    std::vector<Function*> Type::methods() const {
+        std::vector<Function*> funcs(this->_methods.begin(), this->_methods.end());
+        return funcs;
     }
 
     std::ostream& operator<<(std::ostream& stream, const Type& self) {
-        stream << "<Type ";
+        stream << "<Type (" << self.usr << ") ";
 
         if (self.is_basic) {
             stream << "basic type ";
@@ -172,27 +166,5 @@ namespace cwap {
         stream << "]" << std::endl;
 
         stream << "}" << std::endl;
-    }
-
-    bool Type::has_function(std::string usr) const {
-        for (auto method : this->_methods) {
-            if (method->usr == usr) {
-                return true;
-            }
-        }
-        for (auto name_type : this->_types) {
-            if (name_type.second->has_function(usr)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    const std::string Type::get_namespace_name() const {
-        std::size_t index = this->name.find(":");
-        if (index == std::string::npos) {
-            return "";
-        }
-        return this->name.substr(0, index);
     }
 }
