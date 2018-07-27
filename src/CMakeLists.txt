@@ -24,7 +24,6 @@ target_link_libraries(cwap
                yaml-cpp
                "-L${LLVM_LIBRARY_DIRS}" clang)
 
-set_target_properties(cwap PROPERTIES
-        RESOURCE "${CWAP_RESOURCES}")
+file(COPY ${CWAP_RESOURCES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 message("Found these resources ${CWAP_RESOURCES}")

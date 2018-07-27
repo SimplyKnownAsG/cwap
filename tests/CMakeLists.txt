@@ -17,6 +17,7 @@ target_include_directories(run_tests
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cpp
                 ${CMAKE_BINARY_DIR}/3rd-party/include)
 
+file(COPY ${CWAP_RESOURCES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # the ctest thing is far too complicated...
 # add_custom_command(

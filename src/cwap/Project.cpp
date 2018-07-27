@@ -3,6 +3,8 @@
 
 #include "yaml-cpp/yaml.h"
 
+#include "Glob.hpp"
+
 #include <clang-c/Index.h>
 
 #include <algorithm>
@@ -11,11 +13,47 @@
 #include <string>
 #include <vector>
 
+#ifndef _MSCVER
+
+#include <libgen.h>
+#include <unistd.h>
+
+#else
+
+#error "need to get path to current executable"
+
+#endif
+
 namespace cwap {
 
     Project::Project(std::string name)
       : Namespace("", name) {
-        this->process_options("/Users/graham/Projects/cwap/conf/standard.yaml");
+
+        char result[PATH_MAX];
+        ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+
+        const char* dir;
+
+        if (count != -1) {
+            dir = dirname(result);
+        }
+
+        std::cout << "got dir " << dir << std::endl;
+        std::cout << "got dir " << dir << std::endl;
+        std::cout << "got dir " << dir << std::endl;
+        std::cout << "got dir " << dir << std::endl;
+        std::cout << "got dir " << dir << std::endl;
+        std::cout << "got dir " << dir << std::endl;
+
+        for (auto fname : globpp::glob(std::string(dir) + "/*.yaml")) {
+            std::cout << "loading " << fname << std::endl;
+            std::cout << "loading " << fname << std::endl;
+            std::cout << "loading " << fname << std::endl;
+            std::cout << "loading " << fname << std::endl;
+            std::cout << "loading " << fname << std::endl;
+            std::cout << "loading " << fname << std::endl;
+            this->process_options(fname);
+        }
     }
 
     struct RenameThisData {
