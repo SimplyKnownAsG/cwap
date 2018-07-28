@@ -3,7 +3,7 @@
 
 #include "yaml-cpp/yaml.h"
 
-#include "Glob.hpp"
+#include "globpp/globpp.hpp"
 
 #include <clang-c/Index.h>
 
@@ -13,45 +13,14 @@
 #include <string>
 #include <vector>
 
-#ifndef _MSCVER
-
-#include <libgen.h>
-#include <unistd.h>
-
-#else
-
-#error "need to get path to current executable"
-
-#endif
-
 namespace cwap {
 
     Project::Project(std::string name)
       : Namespace("", name) {
+        auto exec_path = globpp::dirname(globpp::get_current_executable());
+        auto pattern = globpp::join(exec_path, "*.yaml");
 
-        char result[PATH_MAX];
-        ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-
-        const char* dir;
-
-        if (count != -1) {
-            dir = dirname(result);
-        }
-
-        std::cout << "got dir " << dir << std::endl;
-        std::cout << "got dir " << dir << std::endl;
-        std::cout << "got dir " << dir << std::endl;
-        std::cout << "got dir " << dir << std::endl;
-        std::cout << "got dir " << dir << std::endl;
-        std::cout << "got dir " << dir << std::endl;
-
-        for (auto fname : globpp::glob(std::string(dir) + "/*.yaml")) {
-            std::cout << "loading " << fname << std::endl;
-            std::cout << "loading " << fname << std::endl;
-            std::cout << "loading " << fname << std::endl;
-            std::cout << "loading " << fname << std::endl;
-            std::cout << "loading " << fname << std::endl;
-            std::cout << "loading " << fname << std::endl;
+        for (auto fname : globpp::glob(pattern)) {
             this->process_options(fname);
         }
     }
@@ -88,7 +57,6 @@ namespace cwap {
     }
 
     void Project::process_options(std::string filename) {
-        std::cout << "loading " << filename << std::endl;
         YAML::Node config = YAML::LoadFile(filename);
         YAML::Node type_renames = config["type renames"];
         if (type_renames) {

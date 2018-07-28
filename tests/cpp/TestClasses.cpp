@@ -5,6 +5,7 @@
 #include "catch.hpp"
 
 #include <algorithm>
+#include <functional>
 
 TEST_CASE("empty class and struct", "[classes]") {
     cwap::Project proj("TestClasses");
@@ -77,7 +78,7 @@ public:
     }
 }
 
-TEST_CASE("overloaded methods", "[classes]") {
+TEST_CASE("overloaded methods", "[classes][overloaded]") {
     cwap::Project proj("TestClasses");
     REQUIRE(0 == proj.types().size());
 
@@ -94,30 +95,41 @@ public:
     temp_file.close();
     proj.parse(temp_file.name);
     cwap::Type* a_type = proj.types().at("A");
-    REQUIRE(a_type->methods().size() == 3);
+    auto methods = a_type->methods();
+    REQUIRE(methods.size() == 3);
 
-    for (auto func : a_type->methods()) {
+    for (auto func : methods) {
         REQUIRE("overloaded" == func->name);
     }
 
+    std::function<bool(cwap::Function*)> predicate;
+
     SECTION("first overload without parameter") {
-        cwap::Function* func = a_type->methods()[0];
-        REQUIRE(func->parameters().size() == 0);
+        predicate = [](cwap::Function* meth) -> bool { return meth->parameters().size() == 0; };
     }
     SECTION("second overload with int parameter") {
-        cwap::Function* func = a_type->methods()[1];
+        predicate = [](cwap::Function* meth) -> bool {
+            return meth->parameters().size() == 1 && meth->parameters()[0]->name == "param1";
+        };
+        auto matches = std::find_if(methods.begin(), methods.end(), predicate);
+        cwap::Function* func = *matches;
         REQUIRE(func->parameters().size() == 1);
         cwap::TypeUsage* param = func->parameters()[0];
         REQUIRE(param->name == "param1");
         REQUIRE(param->cwap_type == proj.types().at("int"));
     }
     SECTION("third overload with float parameter") {
-        cwap::Function* func = a_type->methods()[2];
+        predicate = [](cwap::Function* meth) -> bool {
+            return meth->parameters().size() == 1 && meth->parameters()[0]->name == "floaty";
+        };
+        auto matches = std::find_if(methods.begin(), methods.end(), predicate);
+        cwap::Function* func = *matches;
         REQUIRE(func->parameters().size() == 1);
         cwap::TypeUsage* param = func->parameters()[0];
         REQUIRE(param->name == "floaty");
         REQUIRE(param->cwap_type == proj.types().at("float"));
     }
+    REQUIRE(1 == std::count_if(methods.begin(), methods.end(), predicate));
 }
 
 TEST_CASE("attributes", "[classes]") {
@@ -145,12 +157,12 @@ private:
         REQUIRE(attr->name == "available_to_all");
         REQUIRE(attr->cwap_type == proj.types().at("int"));
     }
-    SECTION("second overload with int parameter") {
+    SECTION("protected") {
         cwap::TypeUsage* attr = a_type->attributes().at("available_to_children");
         REQUIRE(attr->name == "available_to_children");
         REQUIRE(attr->cwap_type == proj.types().at("int"));
     }
-    SECTION("third overload with float parameter") {
+    SECTION("private") {
         REQUIRE_THROWS(a_type->attributes().at("hidden"));
     }
 }

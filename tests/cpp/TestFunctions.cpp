@@ -4,6 +4,9 @@
 
 #include "catch.hpp"
 
+#include <algorithm>
+#include <functional>
+
 TEST_CASE("functions", "[functions]") {
     cwap::Project proj("TestFunctions");
     REQUIRE(0 == proj.types().size());
@@ -70,7 +73,7 @@ int def_decl(int param2) {
     }
 }
 
-TEST_CASE("overloaded functions", "[functions]") {
+TEST_CASE("overloaded functions", "[functions][overloaded]") {
     cwap::Project proj("TestFunctions");
     REQUIRE(0 == proj.types().size());
 
@@ -83,28 +86,39 @@ int overloaded(float floaty);
 
     temp_file.close();
     proj.parse(temp_file.name);
-    REQUIRE(proj.functions().size() == 3);
+    auto functions = proj.functions();
+    REQUIRE(functions.size() == 3);
 
-    for (auto func : proj.functions()) {
+    for (auto func : functions) {
         REQUIRE("overloaded" == func->name);
     }
 
+    std::function<bool(cwap::Function*)> predicate;
+
     SECTION("first overload without parameter") {
-        cwap::Function* func = proj.functions()[0];
-        REQUIRE(func->parameters().size() == 0);
+        predicate = [](cwap::Function* meth) -> bool { return meth->parameters().size() == 0; };
     }
     SECTION("second overload with int parameter") {
-        cwap::Function* func = proj.functions()[1];
+        predicate = [](cwap::Function* meth) -> bool {
+            return meth->parameters().size() == 1 && meth->parameters()[0]->name == "param1";
+        };
+        auto matches = std::find_if(functions.begin(), functions.end(), predicate);
+        cwap::Function* func = *matches;
         REQUIRE(func->parameters().size() == 1);
         cwap::TypeUsage* param = func->parameters()[0];
         REQUIRE(param->name == "param1");
         REQUIRE(param->cwap_type == proj.types().at("int"));
     }
     SECTION("third overload with float parameter") {
-        cwap::Function* func = proj.functions()[2];
+        predicate = [](cwap::Function* meth) -> bool {
+            return meth->parameters().size() == 1 && meth->parameters()[0]->name == "floaty";
+        };
+        auto matches = std::find_if(functions.begin(), functions.end(), predicate);
+        cwap::Function* func = *matches;
         REQUIRE(func->parameters().size() == 1);
         cwap::TypeUsage* param = func->parameters()[0];
         REQUIRE(param->name == "floaty");
         REQUIRE(param->cwap_type == proj.types().at("float"));
     }
+    REQUIRE(1 == std::count_if(functions.begin(), functions.end(), predicate));
 }
