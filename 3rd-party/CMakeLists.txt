@@ -5,7 +5,8 @@ if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/globpp)
                 COMMAND git clone https://github.com/SimplyKnownAsG/globpp.git
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endif()
-add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/globpp/src ${CMAKE_CURRENT_BINARY_DIR}/globpp/build)
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/globpp/src
+    ${CMAKE_CURRENT_BINARY_DIR}/globpp/build)
 
 
 if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/yaml-cpp)

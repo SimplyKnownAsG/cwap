@@ -23,10 +23,10 @@ namespace cwap {
 
         class _cacher {
         private:
-            std::unordered_map<string, void*> _cache;
             /* int indent = -2; */
 
         public:
+            std::unordered_map<string, void*> _cache;
             template<typename T>
             T* get(Project& project, const CXCursor& cursor) {
                 string usr = get_usr(cursor);

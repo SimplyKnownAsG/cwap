@@ -77,7 +77,7 @@ namespace b {
     }
 }
 
-TEST_CASE("std namespace", "[!mayfail][namespaces]") {
+TEST_CASE("std namespace", "[namespaces]") {
     cwap::Project proj("TestFunctions");
     REQUIRE(0 == proj.types().size());
     TempFile temp_file;
@@ -120,8 +120,9 @@ string b;
         REQUIRE(1 == proj.namespaces().size());
         REQUIRE(1 == proj.types().size());
         auto std_space = proj.namespaces().at("std");
-        REQUIRE(1 == std_space->types().size());
-        REQUIRE(1 == std_space->types().count("std::string"));
+        // std::string is really std::__cxx11::string or something like that
+        REQUIRE(1 == std_space->namespaces().begin()->second->types().size());
+        REQUIRE(1 == std_space->namespaces().begin()->second->types().count("std::string"));
     }
     SECTION("public use of std::string adds std to project") {
         temp_file << R"SOURCE(
@@ -137,8 +138,9 @@ std::string b;
         REQUIRE(1 == proj.namespaces().size());
         REQUIRE(1 == proj.types().size());
         auto std_space = proj.namespaces().at("std");
-        REQUIRE(1 == std_space->types().size());
-        REQUIRE(1 == std_space->types().count("std::string"));
+        // std::string is really std::__cxx11::string or something like that
+        REQUIRE(1 == std_space->namespaces().begin()->second->types().size());
+        REQUIRE(1 == std_space->namespaces().begin()->second->types().count("std::string"));
     }
 }
 // TODO: namespace alias

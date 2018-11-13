@@ -17,7 +17,20 @@ namespace cwap {
             throw std::invalid_argument("Cursor is not CXCursor_Namespace");
         }
 
-        return new Namespace(get_usr(cursor), get_name(cursor));
+        auto result = new Namespace(get_usr(cursor), get_name(cursor));
+
+        const CXCursor& parent = clang_getCursorSemanticParent(cursor);
+
+        // TODO: could hide __cxx11 namespaces here
+        if (parent.kind == CXCursor_Namespace) {
+            // getting recursive
+            auto space = project.get<Namespace>(parent);
+            space->_namespaces[result->name] = result;
+        } else {
+            project._namespaces[result->name] = result;
+        }
+
+        return result;
     }
 
     CXChildVisitResult Namespace::visit(CXCursor& cursor, Project& project) {

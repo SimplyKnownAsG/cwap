@@ -53,6 +53,14 @@ namespace cwap {
                 // XXX: so, this is deleted in Project::get
                 project._types[result->name] = result;
             }
+        } else if (parent.kind == CXCursor_Namespace) {
+            auto space = project.get<Namespace>(parent);
+            std::string key = result->usr.empty() ? result->name : result->usr;
+
+            if (space->_types.count(key) != 1) {
+                // XXX: so, this is deleted in Project::get
+                space->_types[result->name] = result;
+            }
         }
 
         return result;
