@@ -18,13 +18,6 @@ namespace cwap {
         return variable;
     }
 
-    void TypeUsage::dump_yaml(std::ostream& stream) const {
-        stream << "{" << std::endl;
-        stream << "name: '" << this->name << "'," << std::endl;
-        stream << "type: '" << this->cwap_type->name << "'" << std::endl;
-        stream << "}" << std::endl;
-    }
-
     std::ostream& operator<<(std::ostream& stream, const TypeUsage& self) {
         stream << "<TypeUsage " << self.name << " " << *self.cwap_type << ">";
         return stream;

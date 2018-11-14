@@ -35,8 +35,6 @@ namespace cwap {
             return this->_parameters;
         };
 
-        void dump_yaml(std::ostream& stream) const;
-
         void write_header(std::ostream& stream, std::string indent) const;
 
         friend std::ostream& operator<<(std::ostream& stream, const Function& self);

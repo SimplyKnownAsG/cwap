@@ -146,11 +146,6 @@ namespace cwap {
         clang_disposeIndex(index);
     }
 
-    void Project::write_yaml() {
-        std::ofstream yaml(this->name + ".yaml");
-        this->dump_yaml(yaml);
-    }
-
     void Project::write_header(std::ostream& stream, std::string indent) const {
 
         for (auto func : this->functions()) {

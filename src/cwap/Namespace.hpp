@@ -51,8 +51,6 @@ namespace cwap {
 
         const std::unordered_map<std::string, Namespace*> namespaces() const;
 
-        void dump_yaml(std::ostream& stream);
-
         virtual void write_header(std::ostream& stream, std::string indent = "") const;
 
         friend std::ostream& operator<<(std::ostream& stream, const Namespace& self);

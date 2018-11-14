@@ -17,8 +17,6 @@ namespace cwap {
 
         Type* cwap_type;
 
-        void dump_yaml(std::ostream& stream) const;
-
         static TypeUsage* Create(Project& project, const CXCursor& cursor);
 
     private:

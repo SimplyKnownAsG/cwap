@@ -45,8 +45,6 @@ namespace cwap {
 
         std::vector<Function*> methods() const;
 
-        void dump_yaml(std::ostream& stream) const;
-
         void write_header(std::ostream& stream, std::string indent) const;
 
     private:

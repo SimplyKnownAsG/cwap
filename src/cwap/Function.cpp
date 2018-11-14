@@ -26,29 +26,16 @@ namespace cwap {
 
         for (auto param = this->parameters().begin(), e = this->parameters().end(); param != e;
              param++) {
-            (*param)->dump_yaml(stream);
+            auto p = *param;
+            stream << p->cwap_type->name;
+            stream << " " << p->name;
+
             if (param != e) {
                 stream << "," << std::endl;
             }
         }
 
         stream << ");" << std::endl;
-    }
-
-    void Function::dump_yaml(std::ostream& stream) const {
-        stream << "{" << std::endl;
-        stream << "name: '" << this->name << "'," << std::endl;
-        stream << "return_type: '" << this->return_type->name << "'," << std::endl;
-
-        stream << "parameters: [" << std::endl;
-        for (auto param = this->parameters().begin(), e = this->parameters().end(); param != e;
-             param++) {
-            (*param)->dump_yaml(stream);
-            if (param != e) {
-                stream << "," << std::endl;
-            }
-        }
-        stream << "]" << std::endl;
     }
 
     std::ostream& operator<<(std::ostream& stream, const Function& self) {
