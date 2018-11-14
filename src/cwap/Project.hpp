@@ -91,6 +91,8 @@ namespace cwap {
 
         void write_yaml();
 
+        void write_header(std::ostream& stream, std::string indent = "") const override;
+
         template<typename T>
         T* get(const CXCursor& cursor) {
             return this->_cache.get<T>(*this, cursor);

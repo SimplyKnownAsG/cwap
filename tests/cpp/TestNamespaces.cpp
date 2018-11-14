@@ -115,8 +115,6 @@ string b;
         temp_file.close();
         proj.parse(temp_file.name);
 
-        std::cout << *proj.variables().at("b")->cwap_type << std::endl;
-
         REQUIRE(1 == proj.namespaces().size());
         REQUIRE(1 == proj.types().size());
         auto std_space = proj.namespaces().at("std");
@@ -132,8 +130,6 @@ std::string b;
 )SOURCE";
         temp_file.close();
         proj.parse(temp_file.name);
-
-        std::cout << *proj.variables().at("b")->cwap_type << std::endl;
 
         REQUIRE(1 == proj.namespaces().size());
         REQUIRE(1 == proj.types().size());

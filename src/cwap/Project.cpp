@@ -151,6 +151,26 @@ namespace cwap {
         this->dump_yaml(yaml);
     }
 
+    void Project::write_header(std::ostream& stream, std::string indent) const {
+
+        for (auto func : this->functions()) {
+            func->write_header(stream, indent);
+        }
+
+        for (auto name_variable : this->variables()) {
+            stream << indent << name_variable.second->cwap_type->name << " " << name_variable.first
+                   << ";" << std::endl;
+        }
+
+        for (auto name_type : this->types()) {
+            name_type.second->write_header(stream, indent);
+        }
+
+        for (auto name_space : this->namespaces()) {
+            name_space.second->write_header(stream, indent);
+        }
+    }
+
     const std::unordered_set<std::string> Project::sources() const {
         return this->_sources;
     }

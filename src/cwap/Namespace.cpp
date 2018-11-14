@@ -110,6 +110,30 @@ namespace cwap {
         return this->_namespaces;
     }
 
+    void Namespace::write_header(std::ostream& stream, std::string indent) const {
+        stream << indent << "namespace " << this->name << " {" << std::endl;
+
+        auto sub_indent = indent + "    ";
+        for (auto func : this->functions()) {
+            func->write_header(stream, sub_indent);
+        }
+
+        for (auto name_variable : this->variables()) {
+            stream << indent << name_variable.second->cwap_type->name << " " << name_variable.first
+                   << ";" << std::endl;
+        }
+
+        for (auto name_type : this->types()) {
+            name_type.second->write_header(stream, sub_indent);
+        }
+
+        for (auto name_space : this->namespaces()) {
+            name_space.second->write_header(stream, sub_indent);
+        }
+
+        stream << indent << "}" << std::endl;
+    }
+
     void Namespace::dump_yaml(std::ostream& stream) {
         stream << "{" << std::endl;
         stream << "namespace: '" << this->name << "'," << std::endl;

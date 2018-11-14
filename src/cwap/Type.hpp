@@ -47,6 +47,8 @@ namespace cwap {
 
         void dump_yaml(std::ostream& stream) const;
 
+        void write_header(std::ostream& stream, std::string indent) const;
+
     private:
         friend class Project;
         friend class Namespace;

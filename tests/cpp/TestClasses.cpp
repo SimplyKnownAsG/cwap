@@ -198,4 +198,34 @@ public:
         REQUIRE(bb_type->types().count("int") == 0);
     }
 }
+
+TEST_CASE("nested classses header", "[classes]") {
+    cwap::Project proj("TestClasses");
+    REQUIRE(0 == proj.types().size());
+
+    TempFile temp_file;
+    temp_file << R"SOURCE(
+    class Unspaced {};
+    namespace z{
+    namespace z2{
+class AA {
+public:
+    class AB {};
+    AB method();
+private:
+    int p;
+};
+
+class BB {
+public:
+    int a; // trap to make sure int is not a type of BB
+    AA* method();
+};}
+}
+)SOURCE";
+
+    temp_file.close();
+    proj.parse(temp_file.name);
+    proj.write_header(std::cout);
+}
 // TODO: protected methods, attributes

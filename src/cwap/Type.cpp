@@ -44,7 +44,6 @@ namespace cwap {
 
         const CXCursor& parent = clang_getCursorSemanticParent(type_cursor);
 
-        // XXX: maybe this should use clang_getCUrsorSemanticParent(cursor)
         if ((parent.kind >= CXCursor_FirstInvalid && parent.kind <= CXCursor_LastInvalid) ||
             parent.kind == CXCursor_TranslationUnit) {
             std::string key = result->usr.empty() ? result->name : result->usr;
@@ -174,5 +173,35 @@ namespace cwap {
         stream << "]" << std::endl;
 
         stream << "}" << std::endl;
+    }
+
+    void Type::write_header(std::ostream& stream, std::string indent) const {
+
+        if (this->is_basic) {
+            return;
+        }
+
+        std::string short_name = this->name.substr(this->name.find_last_of(":") + 1);
+        if (this->is_class) {
+            stream << indent << "class " << short_name << " {" << std::endl;
+        } else if (this->is_struct) {
+            stream << indent << "struct " << short_name << " {" << std::endl;
+        }
+
+        auto sub_indent = indent + "    ";
+        for (auto func : this->methods()) {
+            func->write_header(stream, sub_indent);
+        }
+
+        for (auto name_variable : this->attributes()) {
+            stream << indent << "    " << name_variable.second->cwap_type->name << " "
+                   << name_variable.first << ";" << std::endl;
+        }
+
+        for (auto name_type : this->types()) {
+            name_type.second->write_header(stream, sub_indent);
+        }
+
+        stream << indent << "};" << std::endl;
     }
 }
