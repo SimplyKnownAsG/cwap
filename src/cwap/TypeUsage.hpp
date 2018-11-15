@@ -1,5 +1,7 @@
 #pragma once
 
+#include "cwap/Access.hpp"
+
 #include <ostream>
 #include <string>
 
@@ -11,17 +13,21 @@ namespace cwap {
 
     class TypeUsage {
     public:
-        const std::string usr;
+        std::string const usr;
 
-        const std::string name;
+        std::string const name;
+
+        Access const access;
+
+        int const size;
 
         Type* cwap_type;
 
         static TypeUsage* Create(Project& project, const CXCursor& cursor);
 
     private:
-        TypeUsage(std::string usr, std::string name, Type* cwap_type);
-
-        friend std::ostream& operator<<(std::ostream& stream, const TypeUsage& self);
+        TypeUsage(std::string usr, std::string name, Access access, int size, Type* cwap_type);
     };
+
+    std::ostream& operator<<(std::ostream& stream, const TypeUsage& self);
 }

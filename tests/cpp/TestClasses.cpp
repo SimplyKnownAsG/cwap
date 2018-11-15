@@ -137,34 +137,27 @@ TEST_CASE("attributes", "[classes]") {
     REQUIRE(0 == proj.types().size());
 
     TempFile temp_file;
-    temp_file << R"SOURCE(
-class A {
-public:
-    int available_to_all;
-protected:
-    int available_to_children;
-private:
-    int hidden;
-};
-)SOURCE";
+
+    cwap::Access expected_access;
+
+    SECTION("public attribute") {
+        expected_access = cwap::Access::PUBLIC;
+        temp_file << " class A { public: int the_attr; };";
+    }
+    SECTION("protected") {
+        expected_access = cwap::Access::PROTECTED;
+        temp_file << " class A { protected: int the_attr; };";
+    }
+    SECTION("private") {
+        expected_access = cwap::Access::PRIVATE;
+        temp_file << " class A { private: int the_attr; };";
+    }
 
     temp_file.close();
     proj.parse(temp_file.name);
-    cwap::Type* a_type = proj.types().at("A");
-
-    SECTION("public attribute") {
-        cwap::TypeUsage* attr = a_type->attributes().at("available_to_all");
-        REQUIRE(attr->name == "available_to_all");
-        REQUIRE(attr->cwap_type == proj.types().at("int"));
-    }
-    SECTION("protected") {
-        cwap::TypeUsage* attr = a_type->attributes().at("available_to_children");
-        REQUIRE(attr->name == "available_to_children");
-        REQUIRE(attr->cwap_type == proj.types().at("int"));
-    }
-    SECTION("private") {
-        REQUIRE_THROWS(a_type->attributes().at("hidden"));
-    }
+    auto attr = proj.types().at("A")->attributes().at(0);
+    REQUIRE(attr->name == "the_attr");
+    REQUIRE(attr->access == expected_access);
 }
 
 TEST_CASE("nested classses", "[classes]") {
@@ -205,6 +198,8 @@ TEST_CASE("nested classses header", "[classes]") {
 
     TempFile temp_file;
     temp_file << R"SOURCE(
+    #include <vector>
+    using std::vector;
     class Unspaced {};
     namespace z{
     namespace z2{
@@ -214,6 +209,10 @@ public:
     AB method();
 private:
     int p;
+    unsigned char bitfield0 : 3;
+    unsigned char bitfield1 : 1;
+    bool someswitch;
+    vector<int> something;
 };
 
 class BB {

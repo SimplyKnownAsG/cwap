@@ -22,9 +22,9 @@ namespace cwap {
     private:
         std::unordered_map<string, Type*> _types;
 
-        std::unordered_map<string, TypeUsage*> _attributes;
+        std::vector<TypeUsage*> _attributes;
 
-        std::unordered_set<Function*> _methods;
+        std::vector<Function*> _methods;
 
     public:
         virtual ~Type() = default;
@@ -41,7 +41,7 @@ namespace cwap {
 
         const std::unordered_map<string, Type*> types() const;
 
-        const std::unordered_map<string, TypeUsage*> attributes() const;
+        const std::vector<TypeUsage*> attributes() const;
 
         std::vector<Function*> methods() const;
 

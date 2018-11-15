@@ -1,4 +1,5 @@
 #include "cwap/Type.hpp"
+#include "cwap/Access.hpp"
 #include "cwap/ConvenientClang.hpp"
 #include "cwap/Location.hpp"
 #include "cwap/Namespace.hpp"
@@ -75,23 +76,24 @@ namespace cwap {
 
         switch (clang_getCXXAccessSpecifier(cursor)) {
         case CX_CXXInvalidAccessSpecifier:
-        case CX_CXXPrivate:
+            // do nothing;
+            // I believe this refers to a free function.
             return CXChildVisit_Continue;
+        case CX_CXXPrivate:
         case CX_CXXProtected:
         case CX_CXXPublic:
-            // do nothing;
             break;
         }
 
         switch (cursor.kind) {
         case CXCursor_FieldDecl: {
             TypeUsage* cv = project.get<TypeUsage>(cursor);
-            this->_attributes[cv->name] = cv;
+            this->_attributes.push_back(cv);
             break;
         }
         case CXCursor_CXXMethod: {
             auto cf = project.get<Function>(cursor);
-            this->_methods.insert(cf);
+            this->_methods.push_back(cf);
             break;
         }
         case CXCursor_ClassDecl:
@@ -122,7 +124,7 @@ namespace cwap {
         return this->_types;
     }
 
-    const std::unordered_map<string, TypeUsage*> Type::attributes() const {
+    const std::vector<TypeUsage*> Type::attributes() const {
         return this->_attributes;
     }
 
@@ -153,6 +155,7 @@ namespace cwap {
             return;
         }
 
+        // the actual name is Namespace::ParentClass::Name
         std::string short_name = this->name.substr(this->name.find_last_of(":") + 1);
         if (this->is_class) {
             stream << indent << "class " << short_name << " {" << std::endl;
@@ -165,9 +168,20 @@ namespace cwap {
             func->write_header(stream, sub_indent);
         }
 
-        for (auto name_variable : this->attributes()) {
-            stream << indent << "    " << name_variable.second->cwap_type->name << " "
-                   << name_variable.first << ";" << std::endl;
+        int blemish_num = 0;
+        for (auto attr : this->attributes()) {
+            if (attr->access == Access::PRIVATE) {
+                stream << sub_indent << attr->access << "char blemish" << blemish_num++;
+
+                if (attr->size < sizeof(char)) {
+                    stream << " : " << attr->size << ";" << std::endl;
+                } else {
+                    stream << "[" << attr->size / sizeof(char) << "];" << std::endl;
+                }
+            } else {
+                stream << sub_indent << attr->access << attr->cwap_type->name << " " << attr->name
+                       << ";" << std::endl;
+            }
         }
 
         for (auto name_type : this->types()) {
