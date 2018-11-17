@@ -7,9 +7,9 @@
 namespace cwap {
     enum class Access { PUBLIC, PRIVATE, PROTECTED, INTERNAL };
 
-    Access from_clang(CXCursor const& cursor);
+    Access get_access(CXCursor const& cursor);
 
-    Access from_clang(CX_CXXAccessSpecifier cxx_access);
+    Access get_access(CX_CXXAccessSpecifier cxx_access);
 
     std::ostream& operator<<(std::ostream& stream, const Access& access);
 }

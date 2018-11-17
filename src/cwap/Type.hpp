@@ -1,11 +1,13 @@
 #pragma once
 
+#include "cwap/Access.hpp"
 #include "cwap/ClangVisitor.hpp"
 #include "cwap/Function.hpp"
 
 #include <clang-c/Index.h>
 
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -26,22 +28,24 @@ namespace cwap {
 
         std::vector<Function*> _methods;
 
+        std::vector<std::tuple<Access, Type*>> _bases;
+
     public:
         virtual ~Type() = default;
 
-        const string usr;
+        string const usr;
 
-        const string name;
+        string const name;
 
-        const bool is_basic;
+        bool const is_basic;
 
-        const bool is_struct;
+        bool const is_struct;
 
-        const bool is_class;
+        bool const is_class;
 
-        const std::unordered_map<string, Type*> types() const;
+        std::unordered_map<string, Type*> const types() const;
 
-        const std::vector<TypeUsage*> attributes() const;
+        std::vector<TypeUsage*> const attributes() const;
 
         std::vector<Function*> methods() const;
 
@@ -51,9 +55,7 @@ namespace cwap {
         friend class Project;
         friend class Namespace;
 
-        Type(const string usr, const string name, bool is_basic, bool is_struct, bool is_class);
-
-        /* static Type* Create(Project& project, const CXCursor& cursor); */
+        Type(string const usr, string const name, bool is_basic, bool is_struct, bool is_class);
 
         static Type* Create(Project& project, const CXType& clang_type);
 

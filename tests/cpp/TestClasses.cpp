@@ -192,6 +192,25 @@ public:
     }
 }
 
+TEST_CASE("inheritance", "[classes]") {
+    cwap::Project proj("TestClasses");
+    TempFile temp_file;
+    temp_file << R"SOURCE(
+    class A { };
+    class B { };
+    class C { };
+
+    class D : public A, private B, protected C {};
+
+)SOURCE";
+
+    temp_file.close();
+    proj.parse(temp_file.name);
+    proj.write_header(std::cout);
+
+    auto d = proj.types().at("D");
+}
+
 TEST_CASE("nested classses header", "[classes]") {
     cwap::Project proj("TestClasses");
     REQUIRE(0 == proj.types().size());

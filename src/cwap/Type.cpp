@@ -70,6 +70,12 @@ namespace cwap {
         Location location = Location::Create(cursor);
         CXCursorKind cursor_kind = clang_getCursorKind(cursor);
 
+        if (cursor.kind == CXCursor_CXXBaseSpecifier) {
+            auto base =
+                    std::make_tuple(get_access(cursor), project.get(clang_getCursorType(cursor)));
+            this->_bases.push_back(base);
+        }
+
         if (!clang_isDeclaration(cursor_kind)) {
             return CXChildVisit_Continue;
         }
@@ -86,6 +92,13 @@ namespace cwap {
         }
 
         switch (cursor.kind) {
+        case CXCursor_CXXBaseSpecifier: {
+            CXType ct = clang_getCursorType(cursor);
+            auto t = project.get(ct);
+
+            std::cout << "found a base specifier!! " << t->name << std::endl;
+            break;
+        }
         case CXCursor_FieldDecl: {
             TypeUsage* cv = project.get<TypeUsage>(cursor);
             this->_attributes.push_back(cv);
@@ -158,10 +171,24 @@ namespace cwap {
         // the actual name is Namespace::ParentClass::Name
         std::string short_name = this->name.substr(this->name.find_last_of(":") + 1);
         if (this->is_class) {
-            stream << indent << "class " << short_name << " {" << std::endl;
+            stream << indent << "class " << short_name;
         } else if (this->is_struct) {
-            stream << indent << "struct " << short_name << " {" << std::endl;
+            stream << indent << "struct " << short_name;
         }
+
+        if (this->_bases.size() > 0) {
+            stream << " : ";
+        }
+        for (auto ii = 0; ii < this->_bases.size();) {
+            Access a;
+            Type* base;
+            std::tie(a, base) = this->_bases[ii];
+            stream << a << " " << base->name;
+            if (++ii < this->_bases.size()) {
+                stream << ", ";
+            }
+        }
+        stream << " {\n";
 
         auto sub_indent = indent + "    ";
         for (auto func : this->methods()) {
@@ -171,7 +198,7 @@ namespace cwap {
         int blemish_num = 0;
         for (auto attr : this->attributes()) {
             if (attr->access == Access::PRIVATE) {
-                stream << sub_indent << attr->access << "char blemish" << blemish_num++;
+                stream << sub_indent << attr->access << ": char blemish" << blemish_num++;
 
                 if (attr->size < sizeof(char)) {
                     stream << " : " << attr->size << ";" << std::endl;
@@ -179,8 +206,8 @@ namespace cwap {
                     stream << "[" << attr->size / sizeof(char) << "];" << std::endl;
                 }
             } else {
-                stream << sub_indent << attr->access << attr->cwap_type->name << " " << attr->name
-                       << ";" << std::endl;
+                stream << sub_indent << attr->access << ": " << attr->cwap_type->name << " "
+                       << attr->name << ";" << std::endl;
             }
         }
 

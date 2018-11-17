@@ -3,11 +3,11 @@
 #include <stdexcept>
 
 namespace cwap {
-    Access from_clang(CXCursor const& cursor) {
-        return from_clang(clang_getCXXAccessSpecifier(cursor));
+    Access get_access(CXCursor const& cursor) {
+        return get_access(clang_getCXXAccessSpecifier(cursor));
     }
 
-    Access from_clang(CX_CXXAccessSpecifier cxx_access) {
+    Access get_access(CX_CXXAccessSpecifier cxx_access) {
         switch (cxx_access) {
         case CX_CXXPublic:
             return Access::PUBLIC;
@@ -24,16 +24,16 @@ namespace cwap {
     std::ostream& operator<<(std::ostream& stream, const Access& access) {
         switch (access) {
         case cwap::Access::PUBLIC:
-            stream << "public: ";
+            stream << "public";
             break;
         case cwap::Access::PRIVATE:
-            stream << "private: ";
+            stream << "private";
             break;
         case cwap::Access::PROTECTED:
-            stream << "protected: ";
+            stream << "protected";
             break;
         case cwap::Access::INTERNAL:
-            stream << "internal: ";
+            stream << "internal";
             break;
         }
         return stream;

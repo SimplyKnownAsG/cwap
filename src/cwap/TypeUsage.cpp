@@ -24,7 +24,7 @@ namespace cwap {
         auto type = project.get(clang_type);
         int size = clang_Type_getSizeOf(clang_type);
         TypeUsage* variable =
-                new TypeUsage(get_usr(cursor), get_name(cursor), from_clang(cursor), size, type);
+                new TypeUsage(get_usr(cursor), get_name(cursor), get_access(cursor), size, type);
         return variable;
     }
 
