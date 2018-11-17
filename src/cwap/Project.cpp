@@ -1,5 +1,6 @@
 #include "cwap/Project.hpp"
 #include "cwap/Location.hpp"
+#include "cwap/internal/ClangVisitor.hpp"
 
 #include "yaml-cpp/yaml.h"
 
@@ -136,10 +137,10 @@ namespace cwap {
             }
 
             CXCursor cursor = clang_getTranslationUnitCursor(tu);
-            struct ClangVisitorData wrapper {
-                this, *this
+            struct internal::ClangVisitor::ClangVisitorData data {
+                this, this, nullptr
             };
-            clang_visitChildren(cursor, Project::VisitChildrenCallback, &wrapper);
+            clang_visitChildren(cursor, internal::ClangVisitor::VisitChildrenCallback, &data);
 
             clang_disposeTranslationUnit(tu);
         }

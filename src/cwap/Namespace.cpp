@@ -33,66 +33,6 @@ namespace cwap {
         return result;
     }
 
-    CXChildVisitResult Namespace::visit(CXCursor& cursor, Project& project) {
-        Location location = Location::Create(cursor);
-
-        if (!project.sources().count(location.file_name)) {
-            return CXChildVisit_Continue;
-        }
-
-        CXCursorKind cursor_kind = clang_getCursorKind(cursor);
-
-        if (!clang_isDeclaration(cursor_kind)) {
-            return CXChildVisit_Continue;
-        }
-
-        switch (cursor.kind) {
-        case CXCursor_VarDecl: {
-            auto variable = project.get<TypeUsage>(cursor);
-            this->_variables[variable->name] = variable;
-            break;
-        }
-        case CXCursor_FunctionDecl: {
-            Function* cf = project.get<Function>(cursor);
-            this->_functions.insert(cf);
-            break;
-        }
-        case CXCursor_ClassDecl:
-        case CXCursor_StructDecl: {
-            Type* type = project.get(clang_getCursorType(cursor));
-            this->_types[type->name] = type;
-            // recursive
-            struct ClangVisitorData type_wrapper {
-                type, project
-            };
-            clang_visitChildren(cursor, Type::VisitChildrenCallback, &type_wrapper);
-            break;
-        }
-        case CXCursor_Namespace: {
-            Namespace* sub_space = project.get<Namespace>(cursor);
-            this->_namespaces[sub_space->name] = sub_space;
-
-            // recursive!
-            struct ClangVisitorData type_wrapper {
-                sub_space, project
-            };
-
-            clang_visitChildren(cursor, Namespace::VisitChildrenCallback, &type_wrapper);
-            break;
-        }
-        default: {
-            /* CXString cursor_kind_name = clang_getCursorKindSpelling(cursor.kind); */
-            /* std::cerr << "I do not know how to interpret declaration of " */
-            /*           << clang_getCString(cursor_kind_name) << " (" << cursor.kind << ")" */
-            /*           << std::endl; */
-            /* clang_disposeString(cursor_kind_name); */
-            break;
-        }
-        }
-
-        return CXChildVisit_Continue;
-    }
-
     const std::unordered_map<std::string, Type*> Namespace::types() const {
         return this->_types;
     }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "cwap/ClangVisitor.hpp"
 #include "cwap/Function.hpp"
 #include "cwap/Type.hpp"
 #include "cwap/TypeUsage.hpp"
@@ -17,8 +16,9 @@ namespace cwap {
     class Namespace;
     class Project;
 
-    class Namespace : protected ClangVisitor {
+    class Namespace {
     private:
+        friend class internal::ClangVisitor;
         friend class Type;
 
         std::unordered_map<std::string, Type*> _types;
@@ -30,8 +30,6 @@ namespace cwap {
         std::unordered_map<std::string, Namespace*> _namespaces;
 
     protected:
-        CXChildVisitResult visit(CXCursor& cursor, Project& project) override;
-
         Namespace(const std::string usr, const std::string name);
 
         static Namespace* Create(Project& project, const CXCursor& cursor);

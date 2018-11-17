@@ -15,6 +15,8 @@ namespace cwap {
 
     class Project : public Namespace {
     private:
+        friend class ClangVisitor;
+
         std::unordered_set<string> _sources;
 
         friend CXChildVisitResult find_RENAME_THIS(CXCursor cursor,

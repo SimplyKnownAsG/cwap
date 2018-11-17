@@ -1,8 +1,8 @@
 #pragma once
 
 #include "cwap/Access.hpp"
-#include "cwap/ClangVisitor.hpp"
 #include "cwap/Function.hpp"
+#include "cwap/internal/ClangVisitor.hpp"
 
 #include <clang-c/Index.h>
 
@@ -20,8 +20,10 @@ namespace cwap {
     class Type;
     class TypeUsage;
 
-    class Type : protected ClangVisitor {
+    class Type {
     private:
+        friend class internal::ClangVisitor;
+
         std::unordered_map<string, Type*> _types;
 
         std::vector<TypeUsage*> _attributes;
@@ -58,8 +60,6 @@ namespace cwap {
         Type(string const usr, string const name, bool is_basic, bool is_struct, bool is_class);
 
         static Type* Create(Project& project, const CXType& clang_type);
-
-        CXChildVisitResult visit(CXCursor& cursor, Project& project) override;
 
         friend std::ostream& operator<<(std::ostream& stream, const Type& self);
     };
