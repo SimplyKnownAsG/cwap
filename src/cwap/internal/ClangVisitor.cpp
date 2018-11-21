@@ -3,6 +3,7 @@
 #include "cwap/Namespace.hpp"
 #include "cwap/Project.hpp"
 #include "cwap/Type.hpp"
+#include "cwap/internal/Factory.hpp"
 
 #include <string>
 
@@ -15,6 +16,7 @@ namespace cwap {
             struct ClangVisitorData* visitor_data = (struct ClangVisitorData*)client_data;
 
             // extract the data.
+            Factory* factory = visitor_data->factory;
             Project* project = visitor_data->project;
             Namespace* space = visitor_data->space; // space may == project
             Type* type = visitor_data->current_type;
@@ -34,28 +36,28 @@ namespace cwap {
             // I tried to organize these by similarity.
             switch (cursor.kind) {
             case CXCursor_VarDecl: {
-                auto variable = project->get<TypeUsage>(cursor);
+                auto variable = factory->get_type_usage(cursor);
                 space->_variables[variable->name] = variable;
                 break;
             }
             case CXCursor_FieldDecl: {
-                auto* cv = project->get<TypeUsage>(cursor);
+                auto* cv = factory->get_type_usage(cursor);
                 type->_attributes.push_back(cv);
                 break;
             }
             case CXCursor_FunctionDecl: {
-                auto cf = project->get<Function>(cursor);
+                auto cf = factory->get_function(cursor);
                 space->_functions.insert(cf);
                 break;
             }
             case CXCursor_CXXMethod: {
-                auto cf = project->get<Function>(cursor);
+                auto cf = factory->get_function(cursor);
                 type->_methods.push_back(cf);
                 break;
             }
             case CXCursor_ClassDecl:
             case CXCursor_StructDecl: {
-                Type* new_type = project->get(clang_getCursorType(cursor));
+                Type* new_type = factory->get_type(clang_getCursorType(cursor));
                 if (type != nullptr) {
                     type->_types[new_type->name] = new_type;
                 } else {
@@ -64,7 +66,7 @@ namespace cwap {
 
                 // recursive
                 struct ClangVisitorData data {
-                    project, space, new_type
+                    factory, project, space, new_type
                 };
                 clang_visitChildren(cursor, ClangVisitor::VisitChildrenCallback, &data);
 
@@ -74,21 +76,21 @@ namespace cwap {
                 // class Name : the_base
                 //            ^^^^^^^^^^
                 auto base = std::make_tuple(get_access(cursor),
-                                            project->get(clang_getCursorType(cursor)));
+                                            factory->get_type(clang_getCursorType(cursor)));
                 type->_bases.push_back(base);
                 CXType ct = clang_getCursorType(cursor);
-                auto t = project->get(ct);
+                auto t = factory->get_type(ct);
 
                 std::cout << "found a base specifier!! " << t->name << std::endl;
                 break;
             }
             case CXCursor_Namespace: {
-                Namespace* sub_space = project->get<Namespace>(cursor);
+                Namespace* sub_space = factory->get_namespace(cursor);
                 space->_namespaces[sub_space->name] = sub_space;
 
                 // recursive!
                 struct ClangVisitorData data {
-                    project, sub_space, nullptr
+                    factory, project, sub_space, nullptr
                 };
                 clang_visitChildren(cursor, ClangVisitor::VisitChildrenCallback, &data);
 

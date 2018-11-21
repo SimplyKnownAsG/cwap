@@ -1,5 +1,4 @@
 #include "cwap/Namespace.hpp"
-#include "cwap/ConvenientClang.hpp"
 #include "cwap/Location.hpp"
 #include "cwap/Project.hpp"
 
@@ -11,27 +10,6 @@ namespace cwap {
     Namespace::Namespace(const std::string usr, const std::string name)
       : usr(usr)
       , name(name) {}
-
-    Namespace* Namespace::Create(Project& project, const CXCursor& cursor) {
-        if (cursor.kind != CXCursor_Namespace) {
-            throw std::invalid_argument("Cursor is not CXCursor_Namespace");
-        }
-
-        auto result = new Namespace(get_usr(cursor), get_name(cursor));
-
-        const CXCursor& parent = clang_getCursorSemanticParent(cursor);
-
-        // TODO: could hide __cxx11 namespaces here
-        if (parent.kind == CXCursor_Namespace) {
-            // getting recursive
-            auto space = project.get<Namespace>(parent);
-            space->_namespaces[result->name] = result;
-        } else {
-            project._namespaces[result->name] = result;
-        }
-
-        return result;
-    }
 
     const std::unordered_map<std::string, Type*> Namespace::types() const {
         return this->_types;

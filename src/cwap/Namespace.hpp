@@ -4,8 +4,6 @@
 #include "cwap/Type.hpp"
 #include "cwap/TypeUsage.hpp"
 
-#include <clang-c/Index.h>
-
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -16,9 +14,15 @@ namespace cwap {
     class Namespace;
     class Project;
 
+    namespace internal {
+        class ClangVisitor;
+        class Factory;
+    }
+
     class Namespace {
     private:
         friend class internal::ClangVisitor;
+        friend class internal::Factory;
         friend class Type;
 
         std::unordered_map<std::string, Type*> _types;
@@ -31,8 +35,6 @@ namespace cwap {
 
     protected:
         Namespace(const std::string usr, const std::string name);
-
-        static Namespace* Create(Project& project, const CXCursor& cursor);
 
     public:
         ~Namespace() = default;

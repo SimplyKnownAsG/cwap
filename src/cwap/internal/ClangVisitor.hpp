@@ -9,10 +9,13 @@ namespace cwap {
 
     namespace internal {
 
+        class Factory;
+
         class ClangVisitor {
         protected:
             friend class ::cwap::Project;
             struct ClangVisitorData {
+                Factory* factory;
                 Project* project;
                 Namespace* space;
                 Type* current_type;
@@ -21,7 +24,11 @@ namespace cwap {
                                                             CXCursor parent,
                                                             CXClientData client_data);
 
-            CXChildVisitResult visit(CXCursor& cursor, Project* project, Type* current_type);
+            CXChildVisitResult visit(CXCursor& cursor,
+                                     Project* project,
+                                     Namespace* space,
+                                     Type* current_type);
         };
+
     }
 }

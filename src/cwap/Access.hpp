@@ -1,8 +1,8 @@
 #pragma once
 
-#include "clang-c/Index.h"
-
 #include <ostream>
+
+#include <clang-c/Index.h>
 
 namespace cwap {
     enum class Access { PUBLIC, PRIVATE, PROTECTED, INTERNAL };

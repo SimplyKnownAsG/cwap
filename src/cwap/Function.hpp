@@ -4,22 +4,24 @@
 #include <string>
 #include <vector>
 
-#include <clang-c/Index.h>
-
 namespace cwap {
     class TypeUsage;
     class Project;
     class Type;
 
+    namespace internal {
+        class Factory;
+    }
+
     class Function {
+
+        friend class internal::Factory;
 
     public:
         Function(const Type* return_type, std::string name, std::string usr)
           : return_type(return_type)
           , name(name)
           , usr(usr){};
-
-        static Function* Create(Project& project, const CXCursor& cursor);
 
         const Type* return_type;
 

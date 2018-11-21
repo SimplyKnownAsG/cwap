@@ -2,9 +2,6 @@
 
 #include "cwap/Access.hpp"
 #include "cwap/Function.hpp"
-#include "cwap/internal/ClangVisitor.hpp"
-
-#include <clang-c/Index.h>
 
 #include <string>
 #include <tuple>
@@ -20,9 +17,15 @@ namespace cwap {
     class Type;
     class TypeUsage;
 
+    namespace internal {
+        class ClangVisitor;
+        class Factory;
+    }
+
     class Type {
     private:
         friend class internal::ClangVisitor;
+        friend class internal::Factory;
 
         std::unordered_map<string, Type*> _types;
 
@@ -58,8 +61,6 @@ namespace cwap {
         friend class Namespace;
 
         Type(string const usr, string const name, bool is_basic, bool is_struct, bool is_class);
-
-        static Type* Create(Project& project, const CXType& clang_type);
 
         friend std::ostream& operator<<(std::ostream& stream, const Type& self);
     };

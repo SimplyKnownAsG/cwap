@@ -5,22 +5,6 @@
 
 namespace cwap {
 
-    Function* Function::Create(Project& project, const CXCursor& cursor) {
-        CXType clang_func_type = clang_getCursorType(cursor);
-
-        CXCursor type_decl = clang_getTypeDeclaration(clang_getResultType(clang_func_type));
-        Type* t = project.get(clang_getResultType(clang_func_type));
-        std::vector<TypeUsage*> params;
-        auto func = new Function(t, get_name(cursor), get_usr(cursor));
-
-        for (int ii = 0; ii < clang_getNumArgTypes(clang_func_type); ii++) {
-            CXCursor argument_cursor = clang_Cursor_getArgument(cursor, ii);
-            func->_parameters.push_back(TypeUsage::Create(project, argument_cursor));
-        }
-
-        return func;
-    }
-
     void Function::write_header(std::ostream& stream, std::string indent) const {
         stream << indent << this->return_type->name << " " << this->name << "(";
 

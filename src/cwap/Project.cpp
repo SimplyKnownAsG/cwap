@@ -1,6 +1,8 @@
 #include "cwap/Project.hpp"
 #include "cwap/Location.hpp"
 #include "cwap/internal/ClangVisitor.hpp"
+#include "cwap/internal/ConvenientClang.hpp"
+#include "cwap/internal/Factory.hpp"
 
 #include "yaml-cpp/yaml.h"
 
@@ -44,12 +46,12 @@ namespace cwap {
             return CXChildVisit_Continue;
         }
 
-        std::string name = get_name(cursor);
+        std::string name = internal::get_name(cursor);
 
         if (name == "RENAME_THIS") {
             Project& project = ((struct RenameThisData*)client_data)->project;
             const std::string& new_name = ((struct RenameThisData*)client_data)->new_name;
-            std::string type_name = get_type_name(cursor);
+            std::string type_name = internal::get_type_name(cursor);
             project.type_renames[type_name] = new_name;
             return CXChildVisit_Break;
         }
@@ -137,8 +139,9 @@ namespace cwap {
             }
 
             CXCursor cursor = clang_getTranslationUnitCursor(tu);
+            internal::Factory factory(this);
             struct internal::ClangVisitor::ClangVisitorData data {
-                this, this, nullptr
+                &factory, this, this, nullptr
             };
             clang_visitChildren(cursor, internal::ClangVisitor::VisitChildrenCallback, &data);
 
