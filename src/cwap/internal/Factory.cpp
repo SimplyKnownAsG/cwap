@@ -51,7 +51,6 @@ namespace cwap {
 
             CXType clang_func_type = clang_getCursorType(cursor);
 
-            CXCursor type_decl = clang_getTypeDeclaration(clang_getResultType(clang_func_type));
             Type* t = this->get_type(clang_getResultType(clang_func_type));
             std::vector<TypeUsage*> params;
             auto func = new Function(t, get_name(cursor), usr);
@@ -75,7 +74,6 @@ namespace cwap {
                 return (TypeUsage*)this->_cache[usr];
             }
 
-            auto clang_access = clang_getCXXAccessSpecifier(cursor);
             auto clang_type = clang_getCursorType(cursor);
             auto type = this->get_type(clang_type);
             int size = clang_Type_getSizeOf(clang_type);
@@ -95,10 +93,6 @@ namespace cwap {
 
             auto usr = get_usr(clang_getTypeDeclaration(cxtype));
 
-            if (this->_cache.count(usr) == 1) {
-                return (Type*)this->_cache[usr];
-            }
-
             CXString type_spelling = clang_getTypeSpelling(cxtype);
             string type_name(clang_getCString(type_spelling));
             clang_disposeString(type_spelling);
@@ -109,86 +103,33 @@ namespace cwap {
 
             CXCursor type_cursor = clang_getTypeDeclaration(cxtype);
 
+            auto key = usr.empty() ? type_name : usr;
+            if (this->_cache.count(key) == 1) {
+                return (Type*)this->_cache[key];
+            }
+
             auto result = new Type(usr,
                                    type_name,
                                    CXType_Void < cxtype.kind && cxtype.kind < CXType_NullPtr,
                                    type_cursor.kind == CXCursor_StructDecl,
                                    type_cursor.kind == CXCursor_ClassDecl);
 
-            const CXCursor& parent = clang_getCursorSemanticParent(type_cursor);
+            this->_cache[key] = result;
 
-            if ((parent.kind >= CXCursor_FirstInvalid && parent.kind <= CXCursor_LastInvalid) ||
-                parent.kind == CXCursor_TranslationUnit) {
-                std::string key = result->usr.empty() ? result->name : result->usr;
-
-                if (this->project->_types.count(key) != 1) {
-                    // XXX: so, this is deleted in Project::get
-                    project->_types[result->name] = result;
+            {
+                // adds to the space->_types because we could be grabbing a type out of order, but
+                // we don't want a dangling pointer
+                auto space = (Namespace*)this->project;
+                const CXCursor& parent = clang_getCursorSemanticParent(type_cursor);
+                if (parent.kind == CXCursor_Namespace) {
+                    space = this->get_namespace(parent);
                 }
-            } else if (parent.kind == CXCursor_Namespace) {
-                auto space = this->get_namespace(parent);
-                std::string key = result->usr.empty() ? result->name : result->usr;
 
-                if (space->_types.count(key) != 1) {
-                    // XXX: so, this is deleted in Project::get
-                    space->_types[result->name] = result;
-                }
-            }
-
-            if (result->usr != "") {
-                this->_cache[usr] = result;
-            } else if (this->_cache.count(result->name)) {
-                auto name = result->name;
-                delete result;
-                result = (Type*)this->_cache.at(result->name);
-            } else {
-                this->_cache[result->name] = result;
+                // XXX: key is only the key for the cache.
+                space->_types[type_name] = result;
             }
 
             return result;
         }
-
-        /* template<typename T> */
-        /* T* get(CXCursor const& cursor) { */
-        /*     string usr = Factory::get_usr(cursor); */
-        /*     T* result = nullptr; */
-
-        /*     try { */
-        /*         result = (T*)this->_cache.at(usr); */
-        /*     } catch (exception& ex) { */
-        /*         result = T::Create(project, cursor); */
-
-        /*         if (result->usr != "") { */
-        /*             this->_cache[usr] = result; */
-        /*         } else if (this->_cache.count(result->name)) { */
-        /*             delete result; */
-        /*             result = (T*)this->_cache.at(result->name); */
-        /*         } else { */
-        /*             this->_cache[result->name] = result; */
-        /*         } */
-        /*     } */
-
-        /*     return result; */
-        /* }; */
-
-        /* Type* get(CXType const& cxtype) { */
-        /*     auto usr = get_usr(clang_getTypeDeclaration(cxtype)); */
-        /*     Type* result = nullptr; */
-        /*     try { */
-        /*         result = (Type*)this->_cache.at(usr); */
-        /*     } catch (exception& ex) { */
-        /*         result = Type::Create(project, cxtype); */
-        /*         if (result->usr != "") { */
-        /*             this->_cache[usr] = result; */
-        /*         } else if (this->_cache.count(result->name)) { */
-        /*             delete result; */
-        /*             result = (Type*)this->_cache.at(result->name); */
-        /*         } else { */
-        /*             this->_cache[result->name] = result; */
-        /*         } */
-        /*     } */
-
-        /*     return result; */
-        /* }; */
     }
 }

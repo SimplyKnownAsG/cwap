@@ -56,10 +56,6 @@ namespace cwap {
 
         void write_header(std::ostream& stream, std::string indent) const;
 
-    private:
-        friend class Project;
-        friend class Namespace;
-
         Type(string const usr, string const name, bool is_basic, bool is_struct, bool is_class);
 
         friend std::ostream& operator<<(std::ostream& stream, const Type& self);

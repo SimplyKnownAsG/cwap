@@ -36,6 +36,8 @@ namespace cwap {
     CXChildVisitResult find_RENAME_THIS(CXCursor cursor,
                                         CXCursor parent,
                                         CXClientData client_data) {
+        (void)parent; // suppress -Wunused-parameter
+
         Location location = Location::Create(cursor);
         if (location.file_name != "cwap-temp-source.hpp") {
             return CXChildVisit_Continue;
@@ -69,13 +71,13 @@ namespace cwap {
                 std::ofstream temp_file("cwap-temp-source.hpp");
                 temp_file << text;
                 temp_file.close();
-                const char* args[0];
+                std::vector<const char*> c_style_args;
 
                 CXIndex index = clang_createIndex(1, 1);
                 CXTranslationUnit tu =
                         clang_parseTranslationUnit(index,
                                                    "cwap-temp-source.hpp",
-                                                   args,
+                                                   c_style_args.data(),
                                                    0,
                                                    NULL,
                                                    0,

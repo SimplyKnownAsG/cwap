@@ -12,6 +12,12 @@ endif()
 
 add_library(cwap STATIC ${CWAP_SOURCES})
 
+if(MSVC)
+    target_compile_options(cwap PRIVATE /W4 /WX)
+else(MSVC)
+    target_compile_options(cwap PRIVATE -Wall -Wextra -pedantic -Werror)
+endif(MSVC)
+
 target_compile_features(cwap
         PRIVATE cxx_range_for cxx_auto_type)
 

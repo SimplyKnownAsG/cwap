@@ -13,6 +13,8 @@ namespace cwap {
         CXChildVisitResult ClangVisitor::VisitChildrenCallback(CXCursor cursor,
                                                                CXCursor parent,
                                                                CXClientData client_data) {
+            (void)parent; // suppress -Wunused-parameter
+
             struct ClangVisitorData* visitor_data = (struct ClangVisitorData*)client_data;
 
             // extract the data.
@@ -30,8 +32,6 @@ namespace cwap {
             if (!project->sources().count(location.file_name)) {
                 return CXChildVisit_Continue;
             }
-
-            CXCursorKind cursor_kind = clang_getCursorKind(cursor);
 
             // I tried to organize these by similarity.
             switch (cursor.kind) {
@@ -78,10 +78,6 @@ namespace cwap {
                 auto base = std::make_tuple(get_access(cursor),
                                             factory->get_type(clang_getCursorType(cursor)));
                 type->_bases.push_back(base);
-                CXType ct = clang_getCursorType(cursor);
-                auto t = factory->get_type(ct);
-
-                std::cout << "found a base specifier!! " << t->name << std::endl;
                 break;
             }
             case CXCursor_Namespace: {

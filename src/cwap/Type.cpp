@@ -66,7 +66,7 @@ namespace cwap {
         if (this->_bases.size() > 0) {
             stream << " : ";
         }
-        for (auto ii = 0; ii < this->_bases.size();) {
+        for (size_t ii = 0; ii < this->_bases.size();) {
             Access a;
             Type* base;
             std::tie(a, base) = this->_bases[ii];
@@ -87,7 +87,7 @@ namespace cwap {
             if (attr->access == Access::PRIVATE) {
                 stream << sub_indent << attr->access << ": char blemish" << blemish_num++;
 
-                if (attr->size < sizeof(char)) {
+                if (attr->size < (int)sizeof(char)) {
                     stream << " : " << attr->size << ";" << std::endl;
                 } else {
                     stream << "[" << attr->size / sizeof(char) << "];" << std::endl;
