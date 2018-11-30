@@ -3,6 +3,7 @@
 #include <clang-c/Index.h>
 
 namespace cwap {
+    class Function;
     class Project;
     class Namespace;
     class Type;

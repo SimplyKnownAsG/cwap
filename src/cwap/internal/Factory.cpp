@@ -42,7 +42,7 @@ namespace cwap {
             return space;
         }
 
-        Function* Factory::get_function(CXCursor const& cursor) {
+        Function* Factory::get_function(CXCursor const& cursor, string source_code) {
             string usr = get_usr(cursor);
 
             if (this->_cache.count(usr) == 1) {
@@ -53,16 +53,13 @@ namespace cwap {
 
             Type* t = this->get_type(clang_getResultType(clang_func_type));
             std::vector<TypeUsage*> params;
-            auto func = new Function(t, get_name(cursor), usr);
+            auto func = new Function(t, get_name(cursor), usr, source_code);
 
             for (int ii = 0; ii < clang_getNumArgTypes(clang_func_type); ii++) {
                 CXCursor argument_cursor = clang_Cursor_getArgument(cursor, ii);
                 func->_parameters.push_back(this->get_type_usage(argument_cursor));
             }
 
-            if (func->usr == "") {
-                throw runtime_error("Function has unexpected blank usr");
-            }
             this->_cache[usr] = func;
             return func;
         }
@@ -79,17 +76,18 @@ namespace cwap {
             int size = clang_Type_getSizeOf(clang_type);
             TypeUsage* var = new TypeUsage(usr, get_name(cursor), get_access(cursor), size, type);
 
-            if (var->usr == "") {
-                throw runtime_error("TypeUsage has unexpected blank usr");
+            // usr is "" for template parameters
+            if (var->usr != "") {
+                this->_cache[usr] = var;
             }
-            this->_cache[usr] = var;
+
             return var;
         }
 
         Type* Factory::get_type(CXType const& cxtype) {
-            if (cxtype.kind == CXType_Invalid) {
-                throw std::invalid_argument("Invalid cursor type.");
-            }
+            /* if (cxtype.kind == CXType_Invalid) { */
+            /*     throw std::invalid_argument("Invalid cursor type Factory::get_type."); */
+            /* } */
 
             auto usr = get_usr(clang_getTypeDeclaration(cxtype));
 
@@ -127,6 +125,10 @@ namespace cwap {
 
                 // XXX: key is only the key for the cache.
                 space->_types[type_name] = result;
+            }
+
+            if (cxtype.kind == CXType_Invalid) {
+                std::cout << "invalid with : " << usr << " .. " << type_name << std::endl;
             }
 
             return result;

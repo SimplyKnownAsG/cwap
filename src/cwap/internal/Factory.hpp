@@ -23,7 +23,7 @@ namespace cwap {
 
             Namespace* get_namespace(CXCursor const& cursor);
 
-            Function* get_function(CXCursor const& cursor);
+            Function* get_function(CXCursor const& cursor, std::string source_code = "");
 
             TypeUsage* get_type_usage(CXCursor const& cursor);
 

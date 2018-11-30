@@ -6,6 +6,11 @@
 namespace cwap {
 
     void Function::write_header(std::ostream& stream, std::string indent) const {
+        if (this->source_code != "") {
+            stream << this->source_code;
+            return;
+        }
+
         stream << indent << this->return_type->name << " " << this->name << "(";
 
         for (auto param = this->parameters().begin(), e = this->parameters().end(); param != e;
@@ -14,8 +19,8 @@ namespace cwap {
             stream << p->cwap_type->name;
             stream << " " << p->name;
 
-            if (param != e) {
-                stream << "," << std::endl;
+            if (param + 1 != e) {
+                stream << ", ";
             }
         }
 

@@ -125,6 +125,8 @@ namespace cwap {
 
         for (auto filename : filenames) {
             // load source / header file
+            // this time we need function bodies (no CXTranslationUnit_SkipFunctionBodies)
+            // because that is how we can get the content for templates
             CXTranslationUnit tu = clang_parseTranslationUnit(
                     index,
                     filename.c_str(),
@@ -132,8 +134,7 @@ namespace cwap {
                     num_args,
                     NULL,
                     0,
-                    CXTranslationUnit_SkipFunctionBodies | CXTranslationUnit_PrecompiledPreamble |
-                            CXTranslationUnit_Incomplete);
+                    CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_Incomplete);
 
             if (tu == NULL) {
                 clang_disposeTranslationUnit(tu);

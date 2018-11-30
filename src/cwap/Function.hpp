@@ -18,16 +18,22 @@ namespace cwap {
         friend class internal::Factory;
 
     public:
-        Function(const Type* return_type, std::string name, std::string usr)
+        Function(const Type* return_type,
+                 std::string name,
+                 std::string usr,
+                 std::string source_code = "")
           : return_type(return_type)
           , name(name)
-          , usr(usr){};
+          , usr(usr)
+          , source_code(source_code){};
 
         const Type* return_type;
 
         const std::string name;
 
         const std::string usr;
+
+        const std::string source_code;
 
     private:
         std::vector<TypeUsage*> _parameters;

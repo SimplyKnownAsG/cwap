@@ -13,5 +13,7 @@ namespace cwap {
         std::string get_usr(const CXCursor& cursor);
 
         std::string get_usr(const CXType& type);
+
+        std::string get_source_code(const CXCursor& cursor);
     }
 }

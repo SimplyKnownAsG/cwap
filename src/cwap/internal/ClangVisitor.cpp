@@ -3,9 +3,17 @@
 #include "cwap/Namespace.hpp"
 #include "cwap/Project.hpp"
 #include "cwap/Type.hpp"
+#include "cwap/internal/ConvenientClang.hpp"
 #include "cwap/internal/Factory.hpp"
 
+#include <fstream>
+#include <sstream>
 #include <string>
+#include <vector>
+
+using std::ifstream;
+using std::string;
+using std::vector;
 
 namespace cwap {
     namespace internal {
@@ -24,7 +32,7 @@ namespace cwap {
             Type* type = visitor_data->current_type;
 
             if (!visitor_data) {
-                throw std::runtime_error("bad data based to VisitChildrenCallback");
+                throw std::runtime_error("bad data passed to VisitChildrenCallback");
             }
 
             Location location = Location::Create(cursor);
@@ -47,6 +55,13 @@ namespace cwap {
             }
             case CXCursor_FunctionDecl: {
                 auto cf = factory->get_function(cursor);
+                space->_functions.insert(cf);
+                break;
+            }
+            case CXCursor_FunctionTemplate: {
+                // source code ends before last semi-colon, so add one
+                auto source_code = get_source_code(cursor) + ";";
+                auto cf = factory->get_function(cursor, source_code);
                 space->_functions.insert(cf);
                 break;
             }
