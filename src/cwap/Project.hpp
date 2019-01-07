@@ -2,30 +2,48 @@
 
 #include "cwap/Namespace.hpp"
 
-#include <clang-c/Index.h>
-
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
+
+using std::string;
 
 namespace cwap {
 
     class Project : public Namespace {
     private:
-        std::unordered_set<std::string> _sources;
+        friend class ClangVisitor;
+
+        std::unordered_set<string> _sources;
+
+        friend CXChildVisitResult find_RENAME_THIS(CXCursor cursor,
+                                                   CXCursor parent,
+                                                   CXClientData client_data);
 
     public:
-        Project(std::string name);
+        Project(string name);
 
         ~Project() = default;
 
-        const std::unordered_set<std::string> sources() const;
+        std::unordered_map<string, string> type_renames;
 
-        void parse(std::string filename);
+        void process_options(string filename);
 
-        void parse(std::string filename, std::vector<std::string> clang_args);
+        const std::unordered_set<string> sources() const;
 
-        void parse(std::vector<std::string> filenames, std::vector<std::string> clang_args);
+        void parse(string filename);
+
+        void parse(string filename, std::vector<string> clang_args);
+
+        void parse(std::vector<string> filenames, std::vector<string> clang_args);
 
         void write_yaml();
+
+        void write_header(std::ostream& stream, std::string indent = "") const override;
+
+        friend std::ostream& operator<<(std::ostream& stream, const Project& self) {
+            stream << "<Project " << self.name << ">";
+            return stream;
+        };
     };
 }

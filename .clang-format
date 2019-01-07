@@ -3,6 +3,7 @@ BasedOnStyle: Mozilla
 UseTab: Never
 AccessModifierOffset: -4
 IndentWidth: 4
+ContinuationIndentWidth: 8
 
 BreakBeforeBraces: Attach
 AlwaysBreakAfterReturnType: None

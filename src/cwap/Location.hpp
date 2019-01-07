@@ -17,14 +17,11 @@ namespace cwap {
 
         const unsigned offset;
 
-    private:
-        Location(std::string file_name, unsigned line, unsigned column, unsigned offset);
-
-        friend class Namespace;
-        friend class Type;
-
         static Location Create(const CXCursor& cursor);
 
         friend std::ostream& operator<<(std::ostream& stream, const Location& self);
+
+    private:
+        Location(std::string file_name, unsigned line, unsigned column, unsigned offset);
     };
 }
