@@ -4,6 +4,9 @@
 
 #include "catch.hpp"
 
+#include <algorithm>
+#include <functional>
+
 TEST_CASE("empty class and struct", "[classes]") {
     cwap::Project proj("TestClasses");
     REQUIRE(0 == proj.types().size());
@@ -49,18 +52,25 @@ public:
 
     temp_file.close();
     proj.parse(temp_file.name);
+    cwap::Type* a_type = proj.types().at("A");
+    auto meths = a_type->methods();
 
     SECTION("method returning int") {
-        cwap::Type* a_type = proj.types().at("A");
-        cwap::Function* int_method = a_type->methods()[0];
+        /* cwap::Function* int_method = a_type->methods()[0]; */
+        cwap::Function* int_method =
+                *std::find_if(meths.begin(), meths.end(), [](cwap::Function* m) {
+                    return m->name == "int_method";
+                });
         REQUIRE("int_method" == int_method->name);
         auto return_type = int_method->return_type;
         auto int_type = proj.types().at("int");
         REQUIRE(return_type == int_type);
     }
     SECTION("method returning float") {
-        cwap::Type* a_type = proj.types().at("A");
-        cwap::Function* float_method = a_type->methods()[1];
+        cwap::Function* float_method =
+                *std::find_if(meths.begin(), meths.end(), [](cwap::Function* m) {
+                    return m->name == "float_method";
+                });
         REQUIRE("float_method" == float_method->name);
         auto return_type = float_method->return_type;
         auto float_type = proj.types().at("float");
@@ -68,7 +78,7 @@ public:
     }
 }
 
-TEST_CASE("overloaded methods", "[classes]") {
+TEST_CASE("overloaded methods", "[classes][overloaded]") {
     cwap::Project proj("TestClasses");
     REQUIRE(0 == proj.types().size());
 
@@ -85,30 +95,41 @@ public:
     temp_file.close();
     proj.parse(temp_file.name);
     cwap::Type* a_type = proj.types().at("A");
-    REQUIRE(a_type->methods().size() == 3);
+    auto methods = a_type->methods();
+    REQUIRE(methods.size() == 3);
 
-    for (auto func : a_type->methods()) {
+    for (auto func : methods) {
         REQUIRE("overloaded" == func->name);
     }
 
+    std::function<bool(cwap::Function*)> predicate;
+
     SECTION("first overload without parameter") {
-        cwap::Function* func = a_type->methods()[0];
-        REQUIRE(func->parameters().size() == 0);
+        predicate = [](cwap::Function* meth) -> bool { return meth->parameters().size() == 0; };
     }
     SECTION("second overload with int parameter") {
-        cwap::Function* func = a_type->methods()[1];
+        predicate = [](cwap::Function* meth) -> bool {
+            return meth->parameters().size() == 1 && meth->parameters()[0]->name == "param1";
+        };
+        auto matches = std::find_if(methods.begin(), methods.end(), predicate);
+        cwap::Function* func = *matches;
         REQUIRE(func->parameters().size() == 1);
-        cwap::Parameter* param = func->parameters()[0];
+        cwap::TypeUsage* param = func->parameters()[0];
         REQUIRE(param->name == "param1");
         REQUIRE(param->cwap_type == proj.types().at("int"));
     }
     SECTION("third overload with float parameter") {
-        cwap::Function* func = a_type->methods()[2];
+        predicate = [](cwap::Function* meth) -> bool {
+            return meth->parameters().size() == 1 && meth->parameters()[0]->name == "floaty";
+        };
+        auto matches = std::find_if(methods.begin(), methods.end(), predicate);
+        cwap::Function* func = *matches;
         REQUIRE(func->parameters().size() == 1);
-        cwap::Parameter* param = func->parameters()[0];
+        cwap::TypeUsage* param = func->parameters()[0];
         REQUIRE(param->name == "floaty");
         REQUIRE(param->cwap_type == proj.types().at("float"));
     }
+    REQUIRE(1 == std::count_if(methods.begin(), methods.end(), predicate));
 }
 
 TEST_CASE("attributes", "[classes]") {
@@ -116,34 +137,27 @@ TEST_CASE("attributes", "[classes]") {
     REQUIRE(0 == proj.types().size());
 
     TempFile temp_file;
-    temp_file << R"SOURCE(
-class A {
-public:
-    int available_to_all;
-protected:
-    int available_to_children;
-private:
-    int hidden;
-};
-)SOURCE";
+
+    cwap::Access expected_access;
+
+    SECTION("public attribute") {
+        expected_access = cwap::Access::PUBLIC;
+        temp_file << " class A { public: int the_attr; };";
+    }
+    SECTION("protected") {
+        expected_access = cwap::Access::PROTECTED;
+        temp_file << " class A { protected: int the_attr; };";
+    }
+    SECTION("private") {
+        expected_access = cwap::Access::PRIVATE;
+        temp_file << " class A { private: int the_attr; };";
+    }
 
     temp_file.close();
     proj.parse(temp_file.name);
-    cwap::Type* a_type = proj.types().at("A");
-
-    SECTION("public attribute") {
-        cwap::Attribute* attr = a_type->attributes().at("available_to_all");
-        REQUIRE(attr->name == "available_to_all");
-        REQUIRE(attr->cwap_type == proj.types().at("int"));
-    }
-    SECTION("second overload with int parameter") {
-        cwap::Attribute* attr = a_type->attributes().at("available_to_children");
-        REQUIRE(attr->name == "available_to_children");
-        REQUIRE(attr->cwap_type == proj.types().at("int"));
-    }
-    SECTION("third overload with float parameter") {
-        REQUIRE_THROWS(a_type->attributes().at("hidden"));
-    }
+    auto attr = proj.types().at("A")->attributes().at(0);
+    REQUIRE(attr->name == "the_attr");
+    REQUIRE(attr->access == expected_access);
 }
 
 TEST_CASE("nested classses", "[classes]") {
@@ -177,4 +191,3 @@ public:
         REQUIRE(bb_type->types().count("int") == 0);
     }
 }
-// TODO: protected methods, attributes

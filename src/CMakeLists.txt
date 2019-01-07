@@ -23,3 +23,24 @@ target_link_libraries(cwap
         PUBLIC globpp
                "-L${LLVM_LIBRARY_DIRS}" clang)
 
+if(MSVC)
+    target_compile_options(cwap PRIVATE /W4 /WX)
+else(MSVC)
+    target_compile_options(cwap PRIVATE -Wall -Wextra -pedantic -Werror)
+endif(MSVC)
+
+target_compile_features(cwap
+        PRIVATE cxx_range_for cxx_auto_type)
+
+target_include_directories(cwap
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+               ${LLVM_INCLUDE_DIRS})
+
+target_link_libraries(cwap
+        PUBLIC globpp
+               yaml-cpp
+               "-L${LLVM_LIBRARY_DIRS}" clang)
+
+file(COPY ${CWAP_RESOURCES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+message("Found these resources ${CWAP_RESOURCES}")

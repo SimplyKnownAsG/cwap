@@ -1,61 +1,62 @@
 #pragma once
 
-#include "cwap/ClangVisitor.hpp"
+#include "cwap/Access.hpp"
 #include "cwap/Function.hpp"
 
-#include <clang-c/Index.h>
-
 #include <string>
+#include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
+
+using std::string;
 
 namespace cwap {
 
     class Project;
     class Type;
-    class Attribute;
+    class TypeUsage;
 
-    class Type : protected ClangVisitor {
+    namespace internal {
+        class ClangVisitor;
+        class Factory;
+    }
+
+    class Type {
     private:
-        std::unordered_map<std::string, Type*> _types;
+        friend class internal::ClangVisitor;
+        friend class internal::Factory;
 
-        std::unordered_map<std::string, Attribute*> _attributes;
+        std::unordered_map<string, Type*> _types;
+
+        std::vector<TypeUsage*> _attributes;
 
         std::vector<Function*> _methods;
+
+        std::vector<std::tuple<Access, Type*>> _bases;
 
     public:
         virtual ~Type() = default;
 
-        const std::string name;
+        string const usr;
 
-        const bool is_basic;
+        string const name;
 
-        const bool is_struct;
+        bool const is_basic;
 
-        const bool is_class;
+        bool const is_struct;
 
-        const std::unordered_map<std::string, Type*> types() const;
+        bool const is_class;
 
-        const std::unordered_map<std::string, Attribute*> attributes() const;
+        std::unordered_map<string, Type*> const types() const;
 
-        const std::vector<Function*> methods() const;
+        std::vector<TypeUsage*> const attributes() const;
 
-        void dump_yaml(std::ostream& stream) const;
+        std::vector<Function*> methods() const;
 
-        bool has_function(std::string usr) const;
+        void write_header(std::ostream& stream, std::string indent) const;
 
-        const std::string get_namespace_name() const;
-
-    private:
-        friend class Namespace;
-
-        Type(std::string name, bool is_basic, bool is_struct, bool is_class);
-
-        static Type* Factory(CXType& cursor);
-
-        static Type* Factory(CXCursor& cursor);
-
-        CXChildVisitResult visit(CXCursor& cursor, Project& project) override;
+        Type(string const usr, string const name, bool is_basic, bool is_struct, bool is_class);
 
         friend std::ostream& operator<<(std::ostream& stream, const Type& self);
     };

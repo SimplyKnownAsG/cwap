@@ -5,16 +5,27 @@
 #include <vector>
 
 namespace cwap {
-    class Parameter;
+    class TypeUsage;
+    class Project;
     class Type;
+
+    namespace internal {
+        class Factory;
+    }
 
     class Function {
 
+        friend class internal::Factory;
+
     public:
-        Function(const Type* return_type, std::string name, std::string usr)
+        Function(const Type* return_type,
+                 std::string name,
+                 std::string usr,
+                 std::string source_code = "")
           : return_type(return_type)
           , name(name)
-          , usr(usr){};
+          , usr(usr)
+          , source_code(source_code){};
 
         const Type* return_type;
 
@@ -22,15 +33,18 @@ namespace cwap {
 
         const std::string usr;
 
+        const std::string source_code;
+
     private:
-        friend class Clanger;
-        std::vector<Parameter*> _parameters;
+        std::vector<TypeUsage*> _parameters;
 
     public:
-        const std::vector<Parameter*> parameters() const {
+        const std::vector<TypeUsage*> parameters() const {
             return this->_parameters;
         };
 
-        void dump_yaml(std::ostream& stream) const;
+        void write_header(std::ostream& stream, std::string indent) const;
+
+        friend std::ostream& operator<<(std::ostream& stream, const Function& self);
     };
 }
