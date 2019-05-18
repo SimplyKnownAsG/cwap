@@ -11,12 +11,57 @@
 #include <clang-c/Index.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
 
 namespace cwap {
+
+    static std::vector<string> const& get_std_inc_dirs() {
+        static std::vector<string> std_dirs;
+
+        if (std_dirs.size() == 0) {
+            // XXX: would be really, really nice to not need a temp file
+            std::system("clang++ -E -v -xc++ /dev/null > .cwap-temp-file.out 2>&1");
+
+            {
+                std::ifstream infile(".cwap-temp-file.out");
+                std::string line;
+
+                // look for /^#include <...> starts here/
+                while (std::getline(infile, line)) {
+                    if (line.find("#include <") == 0) {
+                        break;
+                    }
+                }
+
+                // read lines until they don't start with a couple spaces.
+                while (std::getline(infile, line)) {
+                    if (line.find(" /") == 0) {
+                        std_dirs.push_back("-isystem");
+                        std_dirs.push_back(line.substr(1, line.find(" ", 1) - 1));
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if (std_dirs.size() == 0) {
+                throw std::runtime_error(
+                        "Could not get clang++ std include directories.\n"
+                        "This is necessary because the linked clang libraries use reference\n"
+                        "paths instead of fully-qualified paths, and they are in reference to the\n"
+                        "current executable. See `.cwap-temp-file.out`, which is the output of\n"
+                        "  $ clang++ -v -xc++ /dev/null");
+            }
+
+            std::remove(".cwap-temp-file.out");
+        }
+
+        return std_dirs;
+    }
 
     Project::Project(std::string name)
       : Namespace("", name) {
@@ -39,7 +84,7 @@ namespace cwap {
         (void)parent; // suppress -Wunused-parameter
 
         Location location = Location::Create(cursor);
-        if (location.file_name != "cwap-temp-source.hpp") {
+        if (location.file_name != ".cwap-temp-file.hpp") {
             return CXChildVisit_Continue;
         }
 
@@ -68,23 +113,31 @@ namespace cwap {
             for (YAML::const_iterator it = type_renames.begin(); it != type_renames.end(); ++it) {
                 std::string new_name = it->first.as<std::string>();
                 std::string text = it->second.as<std::string>();
-                std::ofstream temp_file("cwap-temp-source.hpp");
+
+                // XXX: would be really nice to not need a temp file. I believe that llvm C++ can
+                // read a buffer instead of a file (that's how one would create auto-compelte tools)
+                std::ofstream temp_file(".cwap-temp-file.hpp");
                 temp_file << text;
                 temp_file.close();
-                std::vector<const char*> c_style_args;
+
+                std::vector<const char*> c_style_args(get_std_inc_dirs().size());
+                /* char const** c_style_args = new char const*[get_std_inc_dirs().size()]; */
+                std::transform(get_std_inc_dirs().begin(),
+                               get_std_inc_dirs().end(),
+                               c_style_args.begin(),
+                               [](std::string const& arg) { return arg.c_str(); });
 
                 CXIndex index = clang_createIndex(1, 1);
                 CXTranslationUnit tu =
                         clang_parseTranslationUnit(index,
-                                                   "cwap-temp-source.hpp",
+                                                   ".cwap-temp-file.hpp",
                                                    c_style_args.data(),
-                                                   0,
+                                                   c_style_args.size(),
                                                    NULL,
                                                    0,
                                                    CXTranslationUnit_SkipFunctionBodies |
-                                                           CXTranslationUnit_PrecompiledPreamble |
-                                                           CXTranslationUnit_Incomplete);
-                std::remove("cwap-temp-source.hpp");
+                                                           CXTranslationUnit_PrecompiledPreamble);
+                std::remove(".cwap-temp-file.hpp");
 
                 CXCursor cursor = clang_getTranslationUnitCursor(tu);
                 struct RenameThisData wrapper {
@@ -109,17 +162,17 @@ namespace cwap {
     }
 
     void Project::parse(std::vector<std::string> filenames, std::vector<std::string> clang_args) {
-        auto num_args = clang_args.size();
-
         CXIndex index = clang_createIndex(1, 1);
 
-        std::vector<const char*> c_style_args;
-        c_style_args.resize(clang_args.size(), nullptr);
-
+        std::vector<const char*> c_style_args(clang_args.size() + get_std_inc_dirs().size());
+        std::transform(get_std_inc_dirs().begin(),
+                       get_std_inc_dirs().end(),
+                       c_style_args.begin(),
+                       [](std::string const& arg) { return arg.c_str(); });
         std::transform(clang_args.begin(),
                        clang_args.end(),
-                       c_style_args.begin(),
-                       [](std::string arg) { return arg.c_str(); });
+                       c_style_args.begin() + get_std_inc_dirs().size(),
+                       [](std::string const& arg) { return arg.c_str(); });
 
         this->_sources.insert(filenames.begin(), filenames.end());
 
@@ -131,7 +184,7 @@ namespace cwap {
                     index,
                     filename.c_str(),
                     c_style_args.data(),
-                    num_args,
+                    c_style_args.size(),
                     NULL,
                     0,
                     CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_Incomplete);
