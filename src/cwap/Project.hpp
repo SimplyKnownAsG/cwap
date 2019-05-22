@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cwap/Config.hpp"
 #include "cwap/Namespace.hpp"
 
 #include <string>
@@ -16,18 +17,12 @@ namespace cwap {
 
         std::unordered_set<string> _sources;
 
-        friend CXChildVisitResult find_RENAME_THIS(CXCursor cursor,
-                                                   CXCursor parent,
-                                                   CXClientData client_data);
-
     public:
         Project(string name);
 
         ~Project() = default;
 
-        std::unordered_map<string, string> type_renames;
-
-        void process_options(string filename);
+        Config* config;
 
         const std::unordered_set<string> sources() const;
 

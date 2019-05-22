@@ -1,4 +1,5 @@
 #include "cwap/internal/Factory.hpp"
+#include "cwap/Config.hpp"
 #include "cwap/internal/ConvenientClang.hpp"
 
 #include <exception>
@@ -95,8 +96,8 @@ namespace cwap {
             string type_name(clang_getCString(type_spelling));
             clang_disposeString(type_spelling);
 
-            if (this->project->type_renames.count(type_name) == 1) {
-                type_name = this->project->type_renames.at(type_name);
+            if (this->project->config->get_type_renames().count(type_name) == 1) {
+                type_name = this->project->config->get_type_renames().at(type_name);
             }
 
             CXCursor type_cursor = clang_getTypeDeclaration(cxtype);
