@@ -4,7 +4,7 @@
 
 TempFile::TempFile(std::string name)
   : name(name) {
-    this->_stream = new std::ofstream(name);
+    this->_stream = new std::ofstream(name, std::ofstream::trunc);
 }
 
 TempFile::TempFile()

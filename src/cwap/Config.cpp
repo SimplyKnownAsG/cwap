@@ -29,6 +29,10 @@ namespace cwap {
         for (auto fname : globpp::glob(pattern)) {
             update_config(this, fname);
         }
+
+        for (auto& kv : this->_type_renames) {
+            std::cout << "RENAME: " << kv.first << " -> " << kv.second << "\n";
+        }
     }
 
     Config& Config::GetConfig() {

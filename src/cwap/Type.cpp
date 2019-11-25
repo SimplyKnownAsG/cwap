@@ -7,8 +7,6 @@
 
 #include <algorithm>
 
-#include <algorithm>
-
 namespace cwap {
 
     Type::Type(const string usr, const string name, bool is_basic, bool is_struct, bool is_class)
